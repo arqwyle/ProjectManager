@@ -1,6 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectManager", "ProjectManager.csproj", "{61A54EC3-ACD4-4F31-A24D-D874D76D32D9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectManager", "ProjectManager\ProjectManager.csproj", "{61A54EC3-ACD4-4F31-A24D-D874D76D32D9}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3D9CC689-02AA-4ADA-BAC6-0B01631D1AF2}"
+	ProjectSection(SolutionItems) = preProject
+		compose.yaml = compose.yaml
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectManagerTests", "ProjectManagerTests\ProjectManagerTests.csproj", "{03936D2C-A418-4E41-8CC5-E71914A86AE3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -12,5 +19,9 @@ Global
 		{61A54EC3-ACD4-4F31-A24D-D874D76D32D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{61A54EC3-ACD4-4F31-A24D-D874D76D32D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{61A54EC3-ACD4-4F31-A24D-D874D76D32D9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{03936D2C-A418-4E41-8CC5-E71914A86AE3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03936D2C-A418-4E41-8CC5-E71914A86AE3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03936D2C-A418-4E41-8CC5-E71914A86AE3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03936D2C-A418-4E41-8CC5-E71914A86AE3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

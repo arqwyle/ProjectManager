@@ -1,0 +1,22 @@
+# This is a generated file. Not intended for manual editing.
+version: "3.8"
+services:
+  web:
+    build:
+      context: "C:\\Users\\yurik2004rus\\envelope\\ProjectManager\\ProjectManager"
+      dockerfile: "Dockerfile"
+      target: "base"
+    command: []
+    entrypoint:
+    - "dotnet"
+    - "/app/bin/Debug/net10.0/ProjectManager.dll"
+    environment:
+      ASPNETCORE_STATICWEBASSETS: "/app/bin/Debug/net10.0/ProjectManager.staticwebassets.runtime.CT.json"
+      DOTNET_USE_POLLING_FILE_WATCHER: "true"
+    image: "projectmanager:dev"
+    ports: []
+    volumes:
+    - "C:\\Users\\yurik2004rus\\envelope\\ProjectManager\\ProjectManager:/app:rw"
+    - "C:\\Users\\yurik2004rus\\envelope\\ProjectManager:/src:rw"
+    - "C:\\Users\\yurik2004rus\\.nuget\\packages:/home/app/.nuget/packages"
+    working_dir: "/app"
