@@ -9,12 +9,14 @@ namespace ProjectManager.Services;
 public class ProjectService(IProjectRepository repository) : IProjectService
 {
     public async Task<List<Project>> GetAllAsync(
+        string? customerName = null,
+        string? executorName = null,
         DateTime? startTimeFrom = null,
         DateTime? startTimeTo = null,
         List<int>? priorities = null,
         string? sortBy = null,
         bool isSortAscending = true)
-        => await repository.GetAllAsync(startTimeFrom, startTimeTo, priorities, sortBy, isSortAscending);
+        => await repository.GetAllAsync(customerName, executorName, startTimeFrom, startTimeTo, priorities, sortBy, isSortAscending);
 
     public async Task<Project?> GetByIdAsync(Guid id)
         => await repository.GetByIdAsync(id);
@@ -36,4 +38,10 @@ public class ProjectService(IProjectRepository repository) : IProjectService
     
     public async Task RemoveEmployeeFromProjectAsync(Guid projectId, Guid employeeId)
     => await repository.RemoveEmployeeFromProjectAsync(projectId, employeeId);
+    
+    public async Task AddObjectiveToProjectAsync(Guid projectId, Guid objectiveId)
+        => await repository.AddObjectiveToProjectAsync(projectId, objectiveId);
+    
+    public async Task RemoveObjectiveFromProjectAsync(Guid projectId, Guid objectiveId)
+        => await repository.RemoveObjectiveFromProjectAsync(projectId, objectiveId);
 }

@@ -5,7 +5,7 @@ using ProjectManager.Dto;
 using ProjectManager.Models;
 using ProjectManager.Services.Interfaces;
 
-namespace ProjectManagerTests;
+namespace ProjectManagerTests.ControllersTests;
 
 public class ProjectsControllerTests
 {
@@ -230,5 +230,61 @@ public class ProjectsControllerTests
         var result = await _controller.Delete(id);
 
         Assert.IsType<NotFoundResult>(result);
+    }
+    
+    [Fact]
+    public async Task AddObjectiveToProject_ShouldReturnNotFound_WhenProjectDoesNotExist()
+    {
+        var projectId = Guid.NewGuid();
+        var objectiveId = Guid.NewGuid();
+        _mockService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync((Project)null!);
+
+        var result = await _controller.AddObjectiveToProject(projectId, objectiveId);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+        var notFoundResult = result as NotFoundObjectResult;
+        Assert.Equal("Project not found", notFoundResult!.Value);
+    }
+
+    [Fact]
+    public async Task AddObjectiveToProject_ShouldReturnNoContent_WhenProjectExists()
+    {
+        var projectId = Guid.NewGuid();
+        var objectiveId = Guid.NewGuid();
+        var project = new Project { Id = projectId, Name = "Test", CustomerName = "Test", ExecutorName = "Test", Priority = 1 };
+        _mockService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync(project);
+        _mockService.Setup(s => s.AddObjectiveToProjectAsync(projectId, objectiveId)).Returns(Task.CompletedTask);
+
+        var result = await _controller.AddObjectiveToProject(projectId, objectiveId);
+
+        Assert.IsType<NoContentResult>(result);
+    }
+
+    [Fact]
+    public async Task RemoveObjectiveFromProject_ShouldReturnNotFound_WhenProjectDoesNotExist()
+    {
+        var projectId = Guid.NewGuid();
+        var objectiveId = Guid.NewGuid();
+        _mockService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync((Project)null!);
+
+        var result = await _controller.RemoveObjectiveFromProject(projectId, objectiveId);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+        var notFoundResult = result as NotFoundObjectResult;
+        Assert.Equal("Project not found", notFoundResult!.Value);
+    }
+
+    [Fact]
+    public async Task RemoveObjectiveFromProject_ShouldReturnNoContent_WhenProjectExists()
+    {
+        var projectId = Guid.NewGuid();
+        var objectiveId = Guid.NewGuid();
+        var project = new Project { Id = projectId, Name = "Test", CustomerName = "Test", ExecutorName = "Test", Priority = 1 };
+        _mockService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync(project);
+        _mockService.Setup(s => s.RemoveObjectiveFromProjectAsync(projectId, objectiveId)).Returns(Task.CompletedTask);
+
+        var result = await _controller.RemoveObjectiveFromProject(projectId, objectiveId);
+
+        Assert.IsType<NoContentResult>(result);
     }
 }

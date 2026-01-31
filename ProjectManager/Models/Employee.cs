@@ -18,4 +18,8 @@ public class Employee : BaseModel
     public required string Mail { get; set; }
     
     public ICollection<EmployeeProject> EmployeeProjects { get; set; } = new List<EmployeeProject>();
+    
+    public ICollection<Objective> AuthoredObjectives { get; set; } = new List<Objective>();
+
+    public ICollection<Objective> AssignedObjectives { get; set; } = new List<Objective>();
 }

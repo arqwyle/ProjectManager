@@ -3,7 +3,7 @@ using ProjectManager.Models;
 using ProjectManager.Repositories.Interfaces;
 using ProjectManager.Services;
 
-namespace ProjectManagerTests;
+namespace ProjectManagerTests.ServicesTests;
 
 public class EmployeeServiceTests
 {

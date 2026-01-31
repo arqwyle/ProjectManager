@@ -5,7 +5,7 @@ using ProjectManager.Dto;
 using ProjectManager.Models;
 using ProjectManager.Services.Interfaces;
 
-namespace ProjectManagerTests;
+namespace ProjectManagerTests.ControllersTests;
 
 public class EmployeesControllerTests
 {

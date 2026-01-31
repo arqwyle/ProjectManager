@@ -3,7 +3,7 @@ using ProjectManager.Database;
 using ProjectManager.Models;
 using ProjectManager.Repositories;
 
-namespace ProjectManagerTests;
+namespace ProjectManagerTests.RepositoriesTests;
 
 public class ProjectRepositoryTests
 {
@@ -261,5 +261,114 @@ public class ProjectRepositoryTests
         var removedLinkExists = await _context.EmployeeProjects
             .AnyAsync(ep => ep.ProjectId == projectId && ep.EmployeeId == employeeId1);
         Assert.False(removedLinkExists);
+    }
+    
+    [Fact]
+    public async Task AddObjectiveToProjectAsync_ShouldUpdateObjectiveProjectId()
+    {
+        var projectId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        var objectiveId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        
+        var objective = new Objective
+        {
+            Id = objectiveId,
+            Name = "Test",
+            AuthorId = Guid.NewGuid(),
+            Comment = "Test",
+            Priority = 1,
+            Status = Status.ToDo,
+            ProjectId = Guid.NewGuid()
+        };
+        
+        await _context.Objectives.AddAsync(objective);
+        await _context.SaveChangesAsync();
+
+        await _repository.AddObjectiveToProjectAsync(projectId, objectiveId);
+        await _context.SaveChangesAsync();
+
+        var updatedObjective = await _context.Objectives.FindAsync(objectiveId);
+        Assert.NotNull(updatedObjective);
+        Assert.Equal(projectId, updatedObjective.ProjectId);
+    }
+
+    [Fact]
+    public async Task AddObjectiveToProjectAsync_ShouldDoNothing_WhenObjectiveDoesNotExist()
+    {
+        var projectId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        var objectiveId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
+        await _repository.AddObjectiveToProjectAsync(projectId, objectiveId);
+        await _context.SaveChangesAsync();
+
+        var objectiveExists = await _context.Objectives.AnyAsync(o => o.Id == objectiveId);
+        Assert.False(objectiveExists);
+    }
+
+    [Fact]
+    public async Task RemoveObjectiveFromProjectAsync_ShouldRemoveObjective_WhenExistsInProject()
+    {
+        var projectId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        var objectiveId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        
+        var objective = new Objective
+        {
+            Id = objectiveId,
+            Name = "Test",
+            AuthorId = Guid.NewGuid(),
+            Comment = "Test",
+            Priority = 1,
+            Status = Status.ToDo,
+            ProjectId = projectId
+        };
+        
+        await _context.Objectives.AddAsync(objective);
+        await _context.SaveChangesAsync();
+
+        await _repository.RemoveObjectiveFromProjectAsync(projectId, objectiveId);
+        await _context.SaveChangesAsync();
+
+        var objectiveExists = await _context.Objectives.AnyAsync(o => o.Id == objectiveId);
+        Assert.False(objectiveExists);
+    }
+
+    [Fact]
+    public async Task RemoveObjectiveFromProjectAsync_ShouldDoNothing_WhenObjectiveDoesNotExist()
+    {
+        var projectId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        var objectiveId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
+        await _repository.RemoveObjectiveFromProjectAsync(projectId, objectiveId);
+        await _context.SaveChangesAsync();
+
+        var objectiveExists = await _context.Objectives.AnyAsync(o => o.Id == objectiveId);
+        Assert.False(objectiveExists);
+    }
+
+    [Fact]
+    public async Task RemoveObjectiveFromProjectAsync_ShouldDoNothing_WhenObjectiveInDifferentProject()
+    {
+        var projectId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        var otherProjectId = Guid.Parse("44444444-4444-4444-4444-444444444444");
+        var objectiveId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        
+        var objective = new Objective
+        {
+            Id = objectiveId,
+            Name = "Test",
+            AuthorId = Guid.NewGuid(),
+            Comment = "Test",
+            Priority = 1,
+            Status = Status.ToDo,
+            ProjectId = otherProjectId
+        };
+        
+        await _context.Objectives.AddAsync(objective);
+        await _context.SaveChangesAsync();
+
+        await _repository.RemoveObjectiveFromProjectAsync(projectId, objectiveId);
+        await _context.SaveChangesAsync();
+
+        var objectiveExists = await _context.Objectives.AnyAsync(o => o.Id == objectiveId);
+        Assert.True(objectiveExists);
     }
 }

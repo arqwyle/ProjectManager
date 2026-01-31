@@ -10,9 +10,16 @@ namespace ProjectManager.Controllers;
 public class ProjectsController(IProjectService service) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<List<ProjectDto>>> GetAll()
+    public async Task<ActionResult<List<ProjectDto>>> GetAll(
+        [FromQuery] string? customerName = null,
+        [FromQuery] string? executorName = null,
+        [FromQuery] DateTime? startTimeFrom = null,
+        [FromQuery] DateTime? startTimeTo = null,
+        [FromQuery] List<int>? priorities = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] bool isSortAscending = true)
     {
-        var projects = await service.GetAllAsync();
+        var projects = await service.GetAllAsync(customerName, executorName, startTimeFrom, startTimeTo, priorities, sortBy, isSortAscending);
         return Ok(projects.Select(MapToDto).ToList());
     }
 
@@ -126,6 +133,28 @@ public class ProjectsController(IProjectService service) : ControllerBase
             return NotFound();
 
         await service.DeleteAsync(id);
+        return NoContent();
+    }
+    
+    [HttpPost("{projectId:guid}/objectives/{objectiveId:guid}")]
+    public async Task<IActionResult> AddObjectiveToProject(Guid projectId, Guid objectiveId)
+    {
+        var project = await service.GetByIdAsync(projectId);
+        if (project == null)
+            return NotFound("Project not found");
+
+        await service.AddObjectiveToProjectAsync(projectId, objectiveId);
+        return NoContent();
+    }
+
+    [HttpDelete("{projectId:guid}/objectives/{objectiveId:guid}")]
+    public async Task<IActionResult> RemoveObjectiveFromProject(Guid projectId, Guid objectiveId)
+    {
+        var project = await service.GetByIdAsync(projectId);
+        if (project == null)
+            return NotFound("Project not found");
+
+        await service.RemoveObjectiveFromProjectAsync(projectId, objectiveId);
         return NoContent();
     }
 

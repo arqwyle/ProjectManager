@@ -9,24 +9,33 @@ public class ProjectRepository(AppDbContext context) : IProjectRepository
 {
     private static IQueryable<Project> ApplySorting(IQueryable<Project> query, string? sortBy, bool isAsc)
     {
-        return (sortBy?.ToLowerInvariant()) switch
+        return sortBy?.ToLowerInvariant() switch
         {
             "name" => isAsc ? query.OrderBy(p => p.Name) : query.OrderByDescending(p => p.Name),
+            "customername" => isAsc ? query.OrderBy(p => p.CustomerName) : query.OrderByDescending(p => p.CustomerName),
+            "executorname" => isAsc ? query.OrderBy(p => p.ExecutorName) : query.OrderByDescending(p => p.ExecutorName),
             "starttime" => isAsc ? query.OrderBy(p => p.StartTime) : query.OrderByDescending(p => p.StartTime),
+            "endtime" => isAsc ? query.OrderBy(p => p.EndTime) : query.OrderByDescending(p => p.EndTime),
             "priority" => isAsc ? query.OrderBy(p => p.Priority) : query.OrderByDescending(p => p.Priority),
             _ => isAsc ? query.OrderBy(p => p.StartTime) : query.OrderByDescending(p => p.StartTime)
         };
     }
     
     public async Task<List<Project>> GetAllAsync(
+        string? customerName = null,
+        string? executorName = null,
         DateTime? startTimeFrom = null,
         DateTime? startTimeTo = null,
         List<int>? priorities = null,
         string? sortBy = null,
         bool isSortAscending = true)
     {
-        var query = context.Projects.Include(p => p.EmployeeProjects).AsQueryable();
-
+        IQueryable<Project> query = context.Projects;
+        
+        if(!string.IsNullOrEmpty(customerName))
+            query = query.Where(p => p.CustomerName == customerName);
+        if(!string.IsNullOrEmpty(executorName))
+            query = query.Where(p => p.ExecutorName == executorName);
         if (startTimeFrom.HasValue)
             query = query.Where(p => p.StartTime >= startTimeFrom.Value);
         if (startTimeTo.HasValue)
@@ -119,6 +128,28 @@ public class ProjectRepository(AppDbContext context) : IProjectRepository
         if (link != null)
         {
             context.EmployeeProjects.Remove(link);
+            await context.SaveChangesAsync();
+        }
+    }
+    
+    public async Task AddObjectiveToProjectAsync(Guid projectId, Guid objectiveId)
+    {
+        var objective = await context.Objectives.FindAsync(objectiveId);
+        if (objective != null)
+        {
+            objective.ProjectId = projectId;
+            context.Objectives.Update(objective);
+            await context.SaveChangesAsync();
+        }
+    }
+    
+    public async Task RemoveObjectiveFromProjectAsync(Guid projectId, Guid objectiveId)
+    {
+        var objective = await context.Objectives
+            .FirstOrDefaultAsync(o => o.Id == objectiveId && o.ProjectId == projectId);
+        if (objective != null)
+        {
+            context.Objectives.Remove(objective);
             await context.SaveChangesAsync();
         }
     }

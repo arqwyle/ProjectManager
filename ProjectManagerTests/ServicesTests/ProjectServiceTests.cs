@@ -3,7 +3,7 @@ using ProjectManager.Models;
 using ProjectManager.Repositories.Interfaces;
 using ProjectManager.Services;
 
-namespace ProjectManagerTests;
+namespace ProjectManagerTests.ServicesTests;
 
 public class ProjectServiceTests
 {
@@ -20,30 +20,32 @@ public class ProjectServiceTests
     public async Task GetAllAsync_ShouldCallRepositoryWithDefaultParameters()
     {
         var projects = new List<Project>();
-        _mockRepo.Setup(r => r.GetAllAsync(null, null, null, null, true))
+        _mockRepo.Setup(r => r.GetAllAsync())
                  .ReturnsAsync(projects);
 
         var result = await _service.GetAllAsync();
 
         Assert.Equal(projects, result);
-        _mockRepo.Verify(r => r.GetAllAsync(null, null, null, null, true), Times.Once);
+        _mockRepo.Verify(r => r.GetAllAsync(), Times.Once);
     }
 
     [Fact]
     public async Task GetAllAsync_ShouldCallRepositoryWithFilters()
     {
+        var customersName = "TestCustomers";
+        var executorName = "TestExecutor";
         var startTimeFrom = DateTime.Now;
         var startTimeTo = DateTime.Now.AddDays(1);
         var priorities = new List<int> { 1, 2 };
         var projects = new List<Project>();
 
-        _mockRepo.Setup(r => r.GetAllAsync(startTimeFrom, startTimeTo, priorities, "Name", false))
+        _mockRepo.Setup(r => r.GetAllAsync(customersName, executorName, startTimeFrom, startTimeTo, priorities, "Name", false))
                  .ReturnsAsync(projects);
 
-        var result = await _service.GetAllAsync(startTimeFrom, startTimeTo, priorities, "Name", false);
+        var result = await _service.GetAllAsync(customersName, executorName, startTimeFrom, startTimeTo, priorities, "Name", false);
 
         Assert.Equal(projects, result);
-        _mockRepo.Verify(r => r.GetAllAsync(startTimeFrom, startTimeTo, priorities, "Name", false), Times.Once);
+        _mockRepo.Verify(r => r.GetAllAsync(customersName, executorName, startTimeFrom, startTimeTo, priorities, "Name", false), Times.Once);
     }
 
     [Fact]
@@ -130,5 +132,31 @@ public class ProjectServiceTests
         await _service.RemoveEmployeeFromProjectAsync(projectId, employeeId);
 
         _mockRepo.Verify(r => r.RemoveEmployeeFromProjectAsync(projectId, employeeId), Times.Once);
+    }
+    
+    [Fact]
+    public async Task AddObjectiveToProjectAsync_ShouldCallRepository()
+    {
+        var projectId = Guid.NewGuid();
+        var objectiveId = Guid.NewGuid();
+        _mockRepo.Setup(r => r.AddObjectiveToProjectAsync(projectId, objectiveId))
+            .Returns(Task.CompletedTask);
+
+        await _service.AddObjectiveToProjectAsync(projectId, objectiveId);
+
+        _mockRepo.Verify(r => r.AddObjectiveToProjectAsync(projectId, objectiveId), Times.Once);
+    }
+
+    [Fact]
+    public async Task RemoveObjectiveFromProjectAsync_ShouldCallRepository()
+    {
+        var projectId = Guid.NewGuid();
+        var objectiveId = Guid.NewGuid();
+        _mockRepo.Setup(r => r.RemoveObjectiveFromProjectAsync(projectId, objectiveId))
+            .Returns(Task.CompletedTask);
+
+        await _service.RemoveObjectiveFromProjectAsync(projectId, objectiveId);
+
+        _mockRepo.Verify(r => r.RemoveObjectiveFromProjectAsync(projectId, objectiveId), Times.Once);
     }
 }

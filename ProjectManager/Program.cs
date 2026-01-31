@@ -13,9 +13,11 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
+builder.Services.AddScoped<IObjectiveRepository, ObjectiveRepository>();
 
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<IObjectiveService, ObjectiveService>();
 
 builder.Services.AddCors(options =>
 {
@@ -26,6 +28,10 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+var scope = app.Services.CreateScope();
+var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+context.Database.Migrate();
 
 if (!app.Environment.IsDevelopment())
 {
@@ -35,11 +41,6 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
-
-var scope = app.Services.CreateScope();
-var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-context.Database.EnsureCreated();
 
 app.UseCors("AllowAll");
 

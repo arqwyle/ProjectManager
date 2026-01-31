@@ -25,4 +25,6 @@ public class Project : BaseModel
     public DateTime EndTime { get; set; }
     
     public required int Priority { get; set; }
+    
+    public ICollection<Objective> Objectives { get; set; } = new List<Objective>();
 }

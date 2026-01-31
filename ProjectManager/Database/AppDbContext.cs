@@ -8,6 +8,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<Employee> Employees => Set<Employee>();
     public DbSet<EmployeeProject> EmployeeProjects => Set<EmployeeProject>();
+    public DbSet<Objective> Objectives => Set<Objective>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -31,5 +32,23 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .WithMany()
             .HasForeignKey(p => p.DirectorId)
             .OnDelete(DeleteBehavior.Restrict);
+        
+        modelBuilder.Entity<Objective>()
+            .HasOne(o => o.Author)
+            .WithMany(e => e.AuthoredObjectives)
+            .HasForeignKey(o => o.AuthorId)
+            .OnDelete(DeleteBehavior.ClientSetNull);
+
+        modelBuilder.Entity<Objective>()
+            .HasOne(o => o.Executor)
+            .WithMany(e => e.AssignedObjectives)
+            .HasForeignKey(o => o.ExecutorId)
+            .OnDelete(DeleteBehavior.ClientSetNull);
+        
+        modelBuilder.Entity<Objective>()
+            .HasOne(o => o.Project)
+            .WithMany(p => p.Objectives)
+            .HasForeignKey(o => o.ProjectId)
+            .OnDelete(DeleteBehavior.ClientSetNull);
     }
 }
