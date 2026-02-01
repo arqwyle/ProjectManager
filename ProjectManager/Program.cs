@@ -25,9 +25,9 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options =>
 
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("RequireManagerOrAbove", policy =>
-        policy.RequireRole("руководитель", "менеджер проекта"))
+        policy.RequireRole("director", "project manager"))
     .AddPolicy("RequireEmployeeOrAbove", policy =>
-        policy.RequireRole("руководитель", "менеджер проекта", "сотрудник"));
+        policy.RequireRole("director", "project manager", "employee"));
 
 builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();

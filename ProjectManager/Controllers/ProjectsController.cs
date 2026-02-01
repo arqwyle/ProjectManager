@@ -28,7 +28,7 @@ public class ProjectsController(IProjectService service) : ControllerBase
         );
     }
 
-    [Authorize(Roles = "руководитель")]
+    [Authorize(Roles = "director")]
     [HttpGet]
     public async Task<ActionResult<List<ProjectDto>>> GetAll(
         [FromQuery] string? customerName = null,
@@ -43,7 +43,7 @@ public class ProjectsController(IProjectService service) : ControllerBase
         return Ok(projects.Select(MapToDto).ToList());
     }
     
-    [Authorize(Roles = "руководитель")]
+    [Authorize(Roles = "director")]
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ProjectDto>> GetById(Guid id)
     {
@@ -51,7 +51,7 @@ public class ProjectsController(IProjectService service) : ControllerBase
         return project == null ? NotFound() : Ok(MapToDto(project));
     }
     
-    [Authorize(Roles = "руководитель")]
+    [Authorize(Roles = "director")]
     [HttpPost]
     public async Task<ActionResult<ProjectCreateDto>> Create(ProjectCreateDto dto)
     {
@@ -103,7 +103,7 @@ public class ProjectsController(IProjectService service) : ControllerBase
         return Ok("Documents uploaded successfully");
     }
 
-    [Authorize(Roles = "руководитель")]
+    [Authorize(Roles = "director")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, ProjectDto dto)
     {
@@ -126,7 +126,7 @@ public class ProjectsController(IProjectService service) : ControllerBase
         return NoContent();
     }
     
-    [Authorize(Roles = "руководитель")]
+    [Authorize(Roles = "director")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {

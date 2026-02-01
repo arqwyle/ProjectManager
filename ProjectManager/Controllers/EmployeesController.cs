@@ -41,7 +41,7 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
         return Ok(MapToDto(employee));
     }
     
-    [Authorize(Roles = "руководитель")]
+    [Authorize(Roles = "director")]
     [HttpPost]
     public async Task<ActionResult<EmployeeCreateDto>> Create(EmployeeCreateDto dto)
     {
@@ -62,7 +62,7 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = employee.Id }, MapToDto(employee));
     }
     
-    [Authorize(Roles = "руководитель")]
+    [Authorize(Roles = "director")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, EmployeeDto dto)
     {
@@ -79,7 +79,7 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
         return NoContent();
     }
     
-    [Authorize(Roles = "руководитель")]
+    [Authorize(Roles = "director")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {

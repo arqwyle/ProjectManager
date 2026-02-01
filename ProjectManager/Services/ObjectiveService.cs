@@ -39,19 +39,19 @@ public class ObjectiveService(IObjectiveRepository objectiveRepository, IEmploye
     
     public async Task<bool> UpdateObjectiveStatusAsync(Guid objectiveId, Status status, string userId, List<string> roles)
     {
-        if (roles.Contains("руководитель"))
+        if (roles.Contains("director"))
             return await UpdateObjectiveStatusInternal(objectiveId, status);
 
-        if (!roles.Contains("менеджер проектов") && !roles.Contains("сотрудник"))
+        if (!roles.Contains("project manager") && !roles.Contains("employee"))
             return false;
 
         var employeeId = await employeeRepository.GetEmployeeIdByUserIdAsync(userId);
         if (employeeId == null) return false;
 
-        if (roles.Contains("сотрудник"))
+        if (roles.Contains("employee"))
             return await UpdateObjectiveIfAssignedToEmployee(objectiveId, status, employeeId.Value);
 
-        if (roles.Contains("менеджер проектов"))
+        if (roles.Contains("project manager"))
             return await UpdateObjectiveIfManagerInProject(objectiveId, status, employeeId.Value);
 
         return false;

@@ -292,7 +292,7 @@ public class ObjectivesControllerTests
         var objectiveId = Guid.NewGuid();
         var status = Status.InProgress;
         var userId = "testUser";
-        var roles = new List<string> { "сотрудник" };
+        var roles = new List<string> { "employee" };
 
         _controller.ControllerContext = new ControllerContext
         {
@@ -319,7 +319,7 @@ public class ObjectivesControllerTests
         var objectiveId = Guid.NewGuid();
         var status = Status.InProgress;
         var userName = "testUser";
-        var roles = new List<string> { "сотрудник" };
+        var roles = new List<string> { "employee" };
 
         _controller.ControllerContext = new ControllerContext
         {

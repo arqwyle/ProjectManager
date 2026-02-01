@@ -151,7 +151,7 @@ namespace ProjectManager.Areas.Identity.Pages.Account
                     }
                     else
                     {
-                        const string defaultRole = "сотрудник";
+                        const string defaultRole = "employee";
                         if (!await _roleManager.RoleExistsAsync(defaultRole))
                             await _roleManager.CreateAsync(new IdentityRole(defaultRole));
                         await _userManager.AddToRoleAsync(user, defaultRole);

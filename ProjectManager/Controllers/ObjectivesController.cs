@@ -25,7 +25,7 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
         );
     }
     
-    [Authorize(Roles = "руководитель")]
+    [Authorize(Roles = "director")]
     [HttpGet]
     public async Task<ActionResult<List<ObjectiveDto>>> GetAll(
         [FromQuery] List<Status>? statuses = null,
@@ -37,7 +37,7 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
         return Ok(objectives.Select(MapToDto).ToList());
     }
     
-    [Authorize(Roles = "руководитель")]
+    [Authorize(Roles = "director")]
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ObjectiveDto>> GetById(Guid id)
     {

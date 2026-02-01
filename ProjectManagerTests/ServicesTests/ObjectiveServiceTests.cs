@@ -111,7 +111,7 @@ public class ObjectiveServiceTests
         var objectiveId = Guid.NewGuid();
         var employeeId = Guid.NewGuid();
         var userId = "testUser";
-        var roles = new List<string> { "сотрудник" };
+        var roles = new List<string> { "employee" };
         var newStatus = Status.InProgress;
 
         var objective = new Objective 
@@ -144,7 +144,7 @@ public class ObjectiveServiceTests
         var managerId = Guid.NewGuid();
         var projectId = Guid.NewGuid();
         var userId = "manager";
-        var roles = new List<string> { "менеджер проектов" };
+        var roles = new List<string> { "project manager" };
         var newStatus = Status.InProgress;
 
         var objective = new Objective 
@@ -176,7 +176,7 @@ public class ObjectiveServiceTests
     {
         var objectiveId = Guid.NewGuid();
         var userName = "director";
-        var roles = new List<string> { "руководитель" };
+        var roles = new List<string> { "director" };
         var newStatus = Status.InProgress;
 
         var objective = new Objective 
@@ -207,7 +207,7 @@ public class ObjectiveServiceTests
         var objectiveId = Guid.NewGuid();
         var employeeId = Guid.NewGuid();
         var userId = "testUser";
-        var roles = new List<string> { "сотрудник" };
+        var roles = new List<string> { "employee" };
         var newStatus = Status.InProgress;
 
         _mockEmployeeRepo.Setup(r => r.GetEmployeeIdByUserIdAsync(userId)).ReturnsAsync(employeeId);
@@ -226,7 +226,7 @@ public class ObjectiveServiceTests
         var managerId = Guid.NewGuid();
         var projectId = Guid.NewGuid();
         var userId = "manager";
-        var roles = new List<string> { "менеджер проектов" };
+        var roles = new List<string> { "project manager" };
         var newStatus = Status.InProgress;
 
         var objective = new Objective 
@@ -256,7 +256,7 @@ public class ObjectiveServiceTests
     {
         var objectiveId = Guid.NewGuid();
         var userId = "user";
-        var roles = new List<string> { "незарегистрированный" };
+        var roles = new List<string> { "unauthorized" };
         var newStatus = Status.InProgress;
 
         var result = await _service.UpdateObjectiveStatusAsync(objectiveId, newStatus, userId, roles);
