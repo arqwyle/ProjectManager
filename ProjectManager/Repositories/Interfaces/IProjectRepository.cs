@@ -22,4 +22,5 @@ public interface IProjectRepository
     Task RemoveEmployeeFromProjectAsync(Guid projectId, Guid employeeId);
     Task AddObjectiveToProjectAsync(Guid projectId, Guid objectiveId);
     Task RemoveObjectiveFromProjectAsync(Guid projectId, Guid objectiveId);
+    Task<List<Project>> GetProjectsByDirectorIdAsync(Guid directorId);
 }

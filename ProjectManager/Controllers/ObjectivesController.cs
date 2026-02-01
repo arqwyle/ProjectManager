@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using ProjectManager.Dto;
 using ProjectManager.Models;
 using ProjectManager.Services.Interfaces;
@@ -9,6 +11,21 @@ namespace ProjectManager.Controllers;
 [Route("api/[controller]")]
 public class ObjectivesController(IObjectiveService service) : ControllerBase
 {
+    private static ObjectiveDto MapToDto(Objective o)
+    {
+        return new ObjectiveDto(
+            o.Id,
+            o.Name,
+            o.AuthorId,
+            o.ExecutorId,
+            o.Status,
+            o.Comment,
+            o.Priority,
+            o.ProjectId
+        );
+    }
+    
+    [Authorize(Roles = "руководитель")]
     [HttpGet]
     public async Task<ActionResult<List<ObjectiveDto>>> GetAll(
         [FromQuery] List<Status>? statuses = null,
@@ -19,7 +36,8 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
         var objectives = await service.GetAllAsync(statuses, priorities, sortBy, isSortAscending);
         return Ok(objectives.Select(MapToDto).ToList());
     }
-
+    
+    [Authorize(Roles = "руководитель")]
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ObjectiveDto>> GetById(Guid id)
     {
@@ -30,6 +48,7 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
         return Ok(MapToDto(objective));
     }
 
+    [Authorize(Policy = "RequireManagerOrAbove")]
     [HttpPost]
     public async Task<ActionResult<ObjectiveDto>> Create(ObjectiveCreateDto dto)
     {
@@ -53,6 +72,7 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = objective.Id }, MapToDto(objective));
     }
 
+    [Authorize(Policy = "RequireManagerOrAbove")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, ObjectiveDto dto)
     {
@@ -72,6 +92,7 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
         return NoContent();
     }
 
+    [Authorize(Policy = "RequireManagerOrAbove")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
@@ -82,7 +103,20 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
         await service.DeleteAsync(id);
         return NoContent();
     }
-    
+
+    [Authorize(Policy = "RequireManagerOrAbove")]
+    [HttpGet("my-projects-objectives")]
+    public async Task<IActionResult> GetObjectivesForManagerProjects()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return Forbid();
+
+        var objectives = await service.GetObjectivesForManagerProjectsAsync(userId);
+        return Ok(objectives);
+    }
+
+    [Authorize(Policy = "RequireManagerOrAbove")]
     [HttpPost("{objectiveId:guid}/executor/{employeeId:guid}")]
     public async Task<IActionResult> AssignExecutor(Guid objectiveId, Guid employeeId)
     {
@@ -100,6 +134,7 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
         return NoContent();
     }
     
+    [Authorize(Policy = "RequireManagerOrAbove")]
     [HttpPut("{objectiveId:guid}/executor")]
     public async Task<IActionResult> UpdateExecutor(Guid objectiveId, Guid  executorId)
     {
@@ -112,18 +147,22 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
 
         return NoContent();
     }
-
-    private static ObjectiveDto MapToDto(Objective o)
+    
+    [Authorize(Policy = "RequireEmployeeOrAbove")]
+    [HttpPatch("{objectiveId:guid}/update-status")]
+    public async Task<IActionResult> UpdateObjectiveStatus(Guid objectiveId, [FromBody] Status status)
     {
-        return new ObjectiveDto(
-            o.Id,
-            o.Name,
-            o.AuthorId,
-            o.ExecutorId,
-            o.Status,
-            o.Comment,
-            o.Priority,
-            o.ProjectId
-        );
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return Forbid();
+        
+        var roles = User.Claims
+            .Where(c => c.Type == ClaimTypes.Role)
+            .Select(c => c.Value)
+            .ToList();
+
+        var success = await service.UpdateObjectiveStatusAsync(objectiveId, status, userId, roles);
+
+        return success ? NoContent() : Forbid();
     }
 }

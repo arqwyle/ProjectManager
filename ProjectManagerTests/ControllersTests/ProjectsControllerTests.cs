@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Moq;
 using ProjectManager.Controllers;
 using ProjectManager.Dto;
@@ -23,8 +25,22 @@ public class ProjectsControllerTests
     {
         var projects = new List<Project>
         {
-            new() { Id = Guid.NewGuid(), Name = "1", CustomerName = "Test", ExecutorName = "Test", Priority = 1 },
-            new() { Id = Guid.NewGuid(), Name = "2", CustomerName = "Test", ExecutorName = "Test", Priority = 1 }
+            new()
+            {
+                Id = Guid.NewGuid(), 
+                Name = "1", 
+                CustomerName = "Test", 
+                ExecutorName = "Test", 
+                Priority = 1
+            },
+            new()
+            {
+                Id = Guid.NewGuid(), 
+                Name = "2", 
+                CustomerName = "Test", 
+                ExecutorName = "Test", 
+                Priority = 1
+            }
         };
         _mockService.Setup(s => s.GetAllAsync()).ReturnsAsync(projects);
 
@@ -41,7 +57,14 @@ public class ProjectsControllerTests
     public async Task GetById_ShouldReturnOk_WhenProjectExists()
     {
         var id = Guid.NewGuid();
-        var project = new Project { Id = id, Name = "Test", CustomerName = "Test", ExecutorName = "Test", Priority = 1 };
+        var project = new Project
+        {
+            Id = id, 
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            Priority = 1
+        };
         _mockService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(project);
 
         var result = await _controller.GetById(id);
@@ -75,7 +98,14 @@ public class ProjectsControllerTests
             Guid.NewGuid(),
             [Guid.NewGuid()]
         );
-        var project = new Project { Id = Guid.NewGuid(), Name = "Test", CustomerName = "Test", ExecutorName = "Test", Priority = 1 };
+        var project = new Project
+        {
+            Id = Guid.NewGuid(), 
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            Priority = 1
+        };
         _mockService.Setup(s => s.AddAsync(It.IsAny<Project>())).ReturnsAsync(project);
         _mockService.Setup(s => s.AddEmployeeToProjectAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                     .Returns(Task.CompletedTask);
@@ -96,7 +126,14 @@ public class ProjectsControllerTests
             "Test", "", "", DateTime.Now, DateTime.Now, 1, Guid.NewGuid(),
             [empId1, empId2]
         );
-        var project = new Project { Id = Guid.NewGuid(), Name = "Test", CustomerName = "Test", ExecutorName = "Test", Priority = 1 };
+        var project = new Project
+        {
+            Id = Guid.NewGuid(), 
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            Priority = 1
+        };
         _mockService.Setup(s => s.AddAsync(It.IsAny<Project>())).ReturnsAsync(project);
         _mockService.Setup(s => s.AddEmployeeToProjectAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                     .Returns(Task.CompletedTask);
@@ -114,7 +151,14 @@ public class ProjectsControllerTests
             "Test", "", "", DateTime.Now, DateTime.Now, 1, Guid.NewGuid(),
             []
         );
-        var project = new Project { Id = Guid.NewGuid(), Name = "Test", CustomerName = "Test", ExecutorName = "Test", Priority = 1 };
+        var project = new Project
+        {
+            Id = Guid.NewGuid(), 
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            Priority = 1
+        };
         _mockService.Setup(s => s.AddAsync(It.IsAny<Project>())).ReturnsAsync(project);
 
         await _controller.Create(dto);
@@ -141,7 +185,14 @@ public class ProjectsControllerTests
     {
         var projectId = Guid.NewGuid();
         var employeeId = Guid.NewGuid();
-        var project = new Project { Id = projectId, Name = "Test", CustomerName = "Test", ExecutorName = "Test", Priority = 1 };
+        var project = new Project
+        {
+            Id = projectId, 
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            Priority = 1
+        };
         _mockService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync(project);
         _mockService.Setup(s => s.AddEmployeeToProjectAsync(projectId, employeeId)).Returns(Task.CompletedTask);
 
@@ -169,7 +220,14 @@ public class ProjectsControllerTests
     {
         var projectId = Guid.NewGuid();
         var employeeId = Guid.NewGuid();
-        var project = new Project { Id = projectId, Name = "Test", CustomerName = "Test", ExecutorName = "Test", Priority = 1 };
+        var project = new Project
+        {
+            Id = projectId, 
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            Priority = 1
+        };
         _mockService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync(project);
         _mockService.Setup(s => s.RemoveEmployeeFromProjectAsync(projectId, employeeId)).Returns(Task.CompletedTask);
 
@@ -182,8 +240,15 @@ public class ProjectsControllerTests
     public async Task Update_ShouldReturnNoContent_WhenValid()
     {
         var id = Guid.NewGuid();
-        var dto = new ProjectDto(id, "Updated", "", "", DateTime.Now, DateTime.Now, 1, Guid.NewGuid(), new List<Guid>());
-        var existingProject = new Project { Id = id, Name = "Test", CustomerName = "Test", ExecutorName = "Test", Priority = 1 };
+        var dto = new ProjectDto(id, "Updated", "", "", DateTime.Now, DateTime.Now, 1, Guid.NewGuid(), []);
+        var existingProject = new Project
+        {
+            Id = id, 
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            Priority = 1
+        };
         _mockService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(existingProject);
         _mockService.Setup(s => s.UpdateAsync(It.IsAny<Project>())).Returns(Task.CompletedTask);
         _mockService.Setup(s => s.UpdateEmployeeLinksAsync(id, It.IsAny<List<Guid>>())).Returns(Task.CompletedTask);
@@ -199,7 +264,7 @@ public class ProjectsControllerTests
     public async Task Update_ShouldReturnNotFound_WhenProjectNotExists()
     {
         var id = Guid.NewGuid();
-        var dto = new ProjectDto(id, "Test", "", "", DateTime.Now, DateTime.Now, 1, Guid.NewGuid(), new List<Guid>());
+        var dto = new ProjectDto(id, "Test", "", "", DateTime.Now, DateTime.Now, 1, Guid.NewGuid(), []);
         _mockService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync((Project?)null);
 
         var result = await _controller.Update(id, dto);
@@ -211,7 +276,14 @@ public class ProjectsControllerTests
     public async Task Delete_ShouldReturnNoContent_WhenProjectExists()
     {
         var id = Guid.NewGuid();
-        var existingProject = new Project { Id = id, Name = "Test", CustomerName = "Test", ExecutorName = "Test", Priority = 1 };
+        var existingProject = new Project
+        {
+            Id = id, 
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            Priority = 1
+        };
         _mockService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(existingProject);
         _mockService.Setup(s => s.DeleteAsync(id)).Returns(Task.CompletedTask);
 
@@ -251,7 +323,14 @@ public class ProjectsControllerTests
     {
         var projectId = Guid.NewGuid();
         var objectiveId = Guid.NewGuid();
-        var project = new Project { Id = projectId, Name = "Test", CustomerName = "Test", ExecutorName = "Test", Priority = 1 };
+        var project = new Project
+        {
+            Id = projectId, 
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            Priority = 1
+        };
         _mockService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync(project);
         _mockService.Setup(s => s.AddObjectiveToProjectAsync(projectId, objectiveId)).Returns(Task.CompletedTask);
 
@@ -279,12 +358,80 @@ public class ProjectsControllerTests
     {
         var projectId = Guid.NewGuid();
         var objectiveId = Guid.NewGuid();
-        var project = new Project { Id = projectId, Name = "Test", CustomerName = "Test", ExecutorName = "Test", Priority = 1 };
+        var project = new Project
+        {
+            Id = projectId, 
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            Priority = 1
+        };
         _mockService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync(project);
         _mockService.Setup(s => s.RemoveObjectiveFromProjectAsync(projectId, objectiveId)).Returns(Task.CompletedTask);
 
         var result = await _controller.RemoveObjectiveFromProject(projectId, objectiveId);
 
         Assert.IsType<NoContentResult>(result);
+    }
+    
+    [Fact]
+    public async Task GetMyProjects_ShouldReturnForbid_WhenUserIdentityIsNull()
+    {
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal() }
+        };
+
+        var result = await _controller.GetMyProjects();
+
+        Assert.IsType<ForbidResult>(result);
+    }
+
+    [Fact]
+    public async Task GetMyProjects_ShouldReturnForbid_WhenUserNameIsNullOrEmpty()
+    {
+        var claimsIdentity = new ClaimsIdentity();
+        claimsIdentity.AddClaim(new Claim(ClaimTypes.Name, ""));
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(claimsIdentity) }
+        };
+
+        var result = await _controller.GetMyProjects();
+
+        Assert.IsType<ForbidResult>(result);
+    }
+
+    [Fact]
+    public async Task GetMyProjects_ShouldReturnOkWithProjects_WhenValidUser()
+    {
+        var userId = "manager";
+        var projects = new List<Project>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(), 
+                Name = "Test", 
+                CustomerName = "Test", 
+                ExecutorName = "Test", 
+                Priority = 1
+            }
+        };
+
+        _mockService.Setup(s => s.GetManagerProjectsAsync(userId)).ReturnsAsync(projects);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, userId)]))
+            }
+        };
+
+        var result = await _controller.GetMyProjects();
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnValue = Assert.IsType<List<Project>>(okResult.Value);
+        Assert.Equal(projects, returnValue);
     }
 }

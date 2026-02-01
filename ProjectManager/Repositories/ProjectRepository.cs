@@ -104,9 +104,7 @@ public class ProjectRepository(AppDbContext context) : IProjectRepository
             .ToListAsync();
 
         foreach (var link in existingLinks.Where(l => !employeeIds.Contains(l.EmployeeId)))
-        {
             context.EmployeeProjects.Remove(link);
-        }
 
         foreach (var empId in employeeIds.Where(empId => existingLinks.All(l => l.EmployeeId != empId)))
         {
@@ -152,5 +150,12 @@ public class ProjectRepository(AppDbContext context) : IProjectRepository
             context.Objectives.Remove(objective);
             await context.SaveChangesAsync();
         }
+    }
+    
+    public async Task<List<Project>> GetProjectsByDirectorIdAsync(Guid directorId)
+    {
+        return await context.Projects
+            .Where(ep => ep.DirectorId == directorId)
+            .ToListAsync();
     }
 }

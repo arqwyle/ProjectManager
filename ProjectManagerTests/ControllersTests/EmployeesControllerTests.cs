@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Moq;
 using ProjectManager.Controllers;
 using ProjectManager.Dto;
@@ -23,8 +25,22 @@ public class EmployeesControllerTests
     {
         var employees = new List<Employee>
         {
-            new() { Id = Guid.NewGuid(), FirstName = "1", LastName = "Test", Patronymic =  "Test", Mail = "Test" },
-            new() { Id = Guid.NewGuid(), FirstName = "2", LastName = "Test", Patronymic =  "Test", Mail = "Test" }
+            new()
+            {
+                Id = Guid.NewGuid(), 
+                FirstName = "1", 
+                LastName = "Test", 
+                Patronymic =  "Test", 
+                Mail = "Test"
+            },
+            new()
+            {
+                Id = Guid.NewGuid(), 
+                FirstName = "2", 
+                LastName = "Test", 
+                Patronymic =  "Test", 
+                Mail = "Test"
+            }
         };
         _mockService.Setup(s => s.GetAllAsync()).ReturnsAsync(employees);
 
@@ -41,7 +57,14 @@ public class EmployeesControllerTests
     public async Task GetById_ShouldReturnOk_WhenEmployeeExists()
     {
         var id = Guid.NewGuid();
-        var employee = new Employee { Id = id, FirstName = "Test", LastName = "Test", Patronymic =  "Test", Mail = "Test" };
+        var employee = new Employee
+        {
+            Id = id, 
+            FirstName = "Test", 
+            LastName = "Test", 
+            Patronymic =  "Test", 
+            Mail = "Test"
+        };
         _mockService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(employee);
 
         var result = await _controller.GetById(id);
@@ -66,7 +89,14 @@ public class EmployeesControllerTests
     public async Task Create_ShouldReturnCreatedAtAction_WhenValid()
     {
         var dto = new EmployeeCreateDto("Test", "Test", "Test", "Test");
-        var employee = new Employee { Id = Guid.NewGuid(), FirstName = "Test", LastName = "Test", Patronymic =  "Test", Mail = "Test" };
+        var employee = new Employee
+        {
+            Id = Guid.NewGuid(), 
+            FirstName = "Test", 
+            LastName = "Test", 
+            Patronymic =  "Test", 
+            Mail = "Test"
+        };
         _mockService.Setup(s => s.AddAsync(It.IsAny<Employee>()))
                     .Callback<Employee>(e => e.Id = employee.Id)
                     .Returns(Task.CompletedTask);
@@ -84,7 +114,14 @@ public class EmployeesControllerTests
     {
         var id = Guid.NewGuid();
         var dto = new EmployeeDto(Guid.NewGuid(), "Test", "Test", "Test", "Test");
-        var existingEmployee = new Employee { Id = id, FirstName = "Test", LastName = "Test", Patronymic =  "Test", Mail = "Test" };
+        var existingEmployee = new Employee
+        {
+            Id = id, 
+            FirstName = "Test", 
+            LastName = "Test", 
+            Patronymic =  "Test", 
+            Mail = "Test"
+        };
         _mockService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(existingEmployee);
         _mockService.Setup(s => s.UpdateAsync(It.IsAny<Employee>())).Returns(Task.CompletedTask);
 
@@ -110,7 +147,14 @@ public class EmployeesControllerTests
     public async Task Delete_ShouldReturnNoContent_WhenEmployeeExists()
     {
         var id = Guid.NewGuid();
-        var existingEmployee = new Employee { Id = id, FirstName = "Test", LastName = "Test", Patronymic =  "Test", Mail = "Test" };
+        var existingEmployee = new Employee
+        {
+            Id = id, 
+            FirstName = "Test", 
+            LastName = "Test", 
+            Patronymic =  "Test", 
+            Mail = "Test"
+        };
         _mockService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(existingEmployee);
         _mockService.Setup(s => s.DeleteAsync(id)).Returns(Task.CompletedTask);
 
@@ -129,5 +173,70 @@ public class EmployeesControllerTests
         var result = await _controller.Delete(id);
 
         Assert.IsType<NotFoundResult>(result);
+    }
+    
+    [Fact]
+    public async Task GetAssignedProjects_ShouldReturnOkWithProjects()
+    {
+        var userId = "testUser";
+        var projects = new List<Project>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(), 
+                Name = "Test", 
+                CustomerName = "Test", 
+                ExecutorName = "Test", 
+                Priority = 1
+            }
+        };
+    
+        _mockService.Setup(s => s.GetEmployeeProjectsAsync(userId)).ReturnsAsync(projects);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, userId)
+            ])) }
+        };
+
+        var result = await _controller.GetAssignedProjects();
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnValue = Assert.IsType<List<Project>>(okResult.Value);
+        Assert.Single(returnValue);
+        Assert.Equal("Test", returnValue[0].Name);
+    }
+
+    [Fact]
+    public async Task GetAssignedObjectives_ShouldReturnOkWithObjectives()
+    {
+        var userId = "testUser";
+        var objectives = new List<Objective>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(), 
+                Name = "Test", 
+                AuthorId = Guid.NewGuid(), 
+                Priority = 1, 
+                Status = Status.ToDo, 
+                ProjectId = Guid.NewGuid()
+            }
+        };
+    
+        _mockService.Setup(s => s.GetEmployeeObjectivesAsync(userId)).ReturnsAsync(objectives);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, userId)
+            ])) }
+        };
+
+        var result = await _controller.GetAssignedObjectives();
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnValue = Assert.IsType<List<Objective>>(okResult.Value);
+        Assert.Single(returnValue);
+        Assert.Equal("Test", returnValue[0].Name);
     }
 }

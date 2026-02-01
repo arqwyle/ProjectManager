@@ -9,4 +9,6 @@ public interface IEmployeeService
     Task AddAsync(Employee employee);
     Task UpdateAsync(Employee employee);
     Task DeleteAsync(Guid id);
+    Task<List<Project>> GetEmployeeProjectsAsync(string userName);
+    Task<List<Objective>> GetEmployeeObjectivesAsync(string userName);
 }

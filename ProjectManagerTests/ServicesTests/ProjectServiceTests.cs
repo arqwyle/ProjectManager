@@ -7,26 +7,28 @@ namespace ProjectManagerTests.ServicesTests;
 
 public class ProjectServiceTests
 {
-    private readonly Mock<IProjectRepository> _mockRepo;
+    private readonly Mock<IProjectRepository> _mockProjectRepo;
+    private readonly Mock<IEmployeeRepository> _mockEmployeeRepo;
     private readonly ProjectService _service;
 
     public ProjectServiceTests()
     {
-        _mockRepo = new Mock<IProjectRepository>();
-        _service = new ProjectService(_mockRepo.Object);
+        _mockProjectRepo = new Mock<IProjectRepository>();
+        _mockEmployeeRepo = new Mock<IEmployeeRepository>();
+        _service = new ProjectService(_mockProjectRepo.Object, _mockEmployeeRepo.Object);
     }
 
     [Fact]
     public async Task GetAllAsync_ShouldCallRepositoryWithDefaultParameters()
     {
         var projects = new List<Project>();
-        _mockRepo.Setup(r => r.GetAllAsync())
+        _mockProjectRepo.Setup(r => r.GetAllAsync())
                  .ReturnsAsync(projects);
 
         var result = await _service.GetAllAsync();
 
         Assert.Equal(projects, result);
-        _mockRepo.Verify(r => r.GetAllAsync(), Times.Once);
+        _mockProjectRepo.Verify(r => r.GetAllAsync(), Times.Once);
     }
 
     [Fact]
@@ -39,60 +41,81 @@ public class ProjectServiceTests
         var priorities = new List<int> { 1, 2 };
         var projects = new List<Project>();
 
-        _mockRepo.Setup(r => r.GetAllAsync(customersName, executorName, startTimeFrom, startTimeTo, priorities, "Name", false))
+        _mockProjectRepo.Setup(r => r.GetAllAsync(customersName, executorName, startTimeFrom, startTimeTo, priorities, "Name", false))
                  .ReturnsAsync(projects);
 
         var result = await _service.GetAllAsync(customersName, executorName, startTimeFrom, startTimeTo, priorities, "Name", false);
 
         Assert.Equal(projects, result);
-        _mockRepo.Verify(r => r.GetAllAsync(customersName, executorName, startTimeFrom, startTimeTo, priorities, "Name", false), Times.Once);
+        _mockProjectRepo.Verify(r => r.GetAllAsync(customersName, executorName, startTimeFrom, startTimeTo, priorities, "Name", false), Times.Once);
     }
 
     [Fact]
     public async Task GetByIdAsync_ShouldCallRepository()
     {
         var id = Guid.NewGuid();
-        var project = new Project { Name = "Test", CustomerName = "Test", ExecutorName = "Test", Priority = 1 };
-        _mockRepo.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(project);
+        var project = new Project
+        {
+            Id = Guid.NewGuid(), 
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            Priority = 1
+        };
+        _mockProjectRepo.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(project);
 
         var result = await _service.GetByIdAsync(id);
 
         Assert.Equal(project, result);
-        _mockRepo.Verify(r => r.GetByIdAsync(id), Times.Once);
+        _mockProjectRepo.Verify(r => r.GetByIdAsync(id), Times.Once);
     }
 
     [Fact]
     public async Task AddAsync_ShouldCallRepository()
     {
-        var project = new Project { Name = "Test", CustomerName = "Test", ExecutorName = "Test", Priority = 1 };
-        _mockRepo.Setup(r => r.AddAsync(project)).ReturnsAsync(project);
+        var project = new Project
+        {
+            Id = Guid.NewGuid(), 
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            Priority = 1
+        };
+        _mockProjectRepo.Setup(r => r.AddAsync(project)).ReturnsAsync(project);
 
         var result = await _service.AddAsync(project);
 
         Assert.Equal(project, result);
-        _mockRepo.Verify(r => r.AddAsync(project), Times.Once);
+        _mockProjectRepo.Verify(r => r.AddAsync(project), Times.Once);
     }
 
     [Fact]
     public async Task UpdateAsync_ShouldCallRepository()
     {
-        var project = new Project { Id = Guid.NewGuid(), Name = "Test", CustomerName = "Test", ExecutorName = "Test", Priority = 1 };
-        _mockRepo.Setup(r => r.UpdateAsync(project)).Returns(Task.CompletedTask);
+        var project = new Project
+        {
+            Id = Guid.NewGuid(), 
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            Priority = 1
+        };
+        _mockProjectRepo.Setup(r => r.UpdateAsync(project)).Returns(Task.CompletedTask);
 
         await _service.UpdateAsync(project);
 
-        _mockRepo.Verify(r => r.UpdateAsync(project), Times.Once);
+        _mockProjectRepo.Verify(r => r.UpdateAsync(project), Times.Once);
     }
 
     [Fact]
     public async Task DeleteAsync_ShouldCallRepository()
     {
         var id = Guid.NewGuid();
-        _mockRepo.Setup(r => r.DeleteAsync(id)).Returns(Task.CompletedTask);
+        _mockProjectRepo.Setup(r => r.DeleteAsync(id)).Returns(Task.CompletedTask);
 
         await _service.DeleteAsync(id);
 
-        _mockRepo.Verify(r => r.DeleteAsync(id), Times.Once);
+        _mockProjectRepo.Verify(r => r.DeleteAsync(id), Times.Once);
     }
 
     [Fact]
@@ -100,12 +123,12 @@ public class ProjectServiceTests
     {
         var projectId = Guid.NewGuid();
         var employeeId = Guid.NewGuid();
-        _mockRepo.Setup(r => r.AddEmployeeToProjectAsync(projectId, employeeId))
+        _mockProjectRepo.Setup(r => r.AddEmployeeToProjectAsync(projectId, employeeId))
                  .Returns(Task.CompletedTask);
 
         await _service.AddEmployeeToProjectAsync(projectId, employeeId);
 
-        _mockRepo.Verify(r => r.AddEmployeeToProjectAsync(projectId, employeeId), Times.Once);
+        _mockProjectRepo.Verify(r => r.AddEmployeeToProjectAsync(projectId, employeeId), Times.Once);
     }
 
     [Fact]
@@ -113,12 +136,12 @@ public class ProjectServiceTests
     {
         var projectId = Guid.NewGuid();
         var employeeIds = new List<Guid> { Guid.NewGuid(), Guid.NewGuid() };
-        _mockRepo.Setup(r => r.UpdateEmployeeLinksAsync(projectId, employeeIds))
+        _mockProjectRepo.Setup(r => r.UpdateEmployeeLinksAsync(projectId, employeeIds))
                  .Returns(Task.CompletedTask);
 
         await _service.UpdateEmployeeLinksAsync(projectId, employeeIds);
 
-        _mockRepo.Verify(r => r.UpdateEmployeeLinksAsync(projectId, employeeIds), Times.Once);
+        _mockProjectRepo.Verify(r => r.UpdateEmployeeLinksAsync(projectId, employeeIds), Times.Once);
     }
     
     [Fact]
@@ -126,12 +149,12 @@ public class ProjectServiceTests
     {
         var projectId = Guid.NewGuid();
         var employeeId = Guid.NewGuid();
-        _mockRepo.Setup(r => r.RemoveEmployeeFromProjectAsync(projectId, employeeId))
+        _mockProjectRepo.Setup(r => r.RemoveEmployeeFromProjectAsync(projectId, employeeId))
             .Returns(Task.CompletedTask);
 
         await _service.RemoveEmployeeFromProjectAsync(projectId, employeeId);
 
-        _mockRepo.Verify(r => r.RemoveEmployeeFromProjectAsync(projectId, employeeId), Times.Once);
+        _mockProjectRepo.Verify(r => r.RemoveEmployeeFromProjectAsync(projectId, employeeId), Times.Once);
     }
     
     [Fact]
@@ -139,12 +162,12 @@ public class ProjectServiceTests
     {
         var projectId = Guid.NewGuid();
         var objectiveId = Guid.NewGuid();
-        _mockRepo.Setup(r => r.AddObjectiveToProjectAsync(projectId, objectiveId))
+        _mockProjectRepo.Setup(r => r.AddObjectiveToProjectAsync(projectId, objectiveId))
             .Returns(Task.CompletedTask);
 
         await _service.AddObjectiveToProjectAsync(projectId, objectiveId);
 
-        _mockRepo.Verify(r => r.AddObjectiveToProjectAsync(projectId, objectiveId), Times.Once);
+        _mockProjectRepo.Verify(r => r.AddObjectiveToProjectAsync(projectId, objectiveId), Times.Once);
     }
 
     [Fact]
@@ -152,11 +175,49 @@ public class ProjectServiceTests
     {
         var projectId = Guid.NewGuid();
         var objectiveId = Guid.NewGuid();
-        _mockRepo.Setup(r => r.RemoveObjectiveFromProjectAsync(projectId, objectiveId))
+        _mockProjectRepo.Setup(r => r.RemoveObjectiveFromProjectAsync(projectId, objectiveId))
             .Returns(Task.CompletedTask);
 
         await _service.RemoveObjectiveFromProjectAsync(projectId, objectiveId);
 
-        _mockRepo.Verify(r => r.RemoveObjectiveFromProjectAsync(projectId, objectiveId), Times.Once);
+        _mockProjectRepo.Verify(r => r.RemoveObjectiveFromProjectAsync(projectId, objectiveId), Times.Once);
+    }
+    
+    [Fact]
+    public async Task GetManagerProjectsAsync_ShouldReturnEmptyList_WhenEmployeeNotFound()
+    {
+        var userId = "unknown";
+        _mockEmployeeRepo.Setup(r => r.GetEmployeeIdByUserIdAsync(userId)).ReturnsAsync((Guid?)null);
+
+        var result = await _service.GetManagerProjectsAsync(userId);
+
+        Assert.Empty(result);
+        _mockProjectRepo.Verify(r => r.GetProjectsByDirectorIdAsync(It.IsAny<Guid>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetManagerProjectsAsync_ShouldReturnProjects_WhenEmployeeExists()
+    {
+        var userId = "manager";
+        var employeeId = Guid.NewGuid();
+        var projects = new List<Project>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(), 
+                Name = "Test", 
+                CustomerName = "Test", 
+                ExecutorName = "Test", 
+                Priority = 1
+            }
+        };
+
+        _mockEmployeeRepo.Setup(r => r.GetEmployeeIdByUserIdAsync(userId)).ReturnsAsync(employeeId);
+        _mockProjectRepo.Setup(r => r.GetProjectsByDirectorIdAsync(employeeId)).ReturnsAsync(projects);
+
+        var result = await _service.GetManagerProjectsAsync(userId);
+
+        Assert.Equal(projects, result);
+        _mockProjectRepo.Verify(r => r.GetProjectsByDirectorIdAsync(employeeId), Times.Once);
     }
 }

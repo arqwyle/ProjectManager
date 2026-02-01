@@ -20,4 +20,22 @@ public class EmployeeService(IEmployeeRepository repository) : IEmployeeService
 
     public async Task DeleteAsync(Guid id)
         => await repository.DeleteAsync(id);
+    
+    public async Task<List<Project>> GetEmployeeProjectsAsync(string userId)
+    {
+        var employeeId = await repository.GetEmployeeIdByUserIdAsync(userId);
+        if (employeeId == null) 
+            return [];
+
+        return await repository.GetProjectsByEmployeeIdAsync(employeeId);
+    }
+
+    public async Task<List<Objective>> GetEmployeeObjectivesAsync(string userId)
+    {
+        var employeeId = await repository.GetEmployeeIdByUserIdAsync(userId);
+        if (employeeId == null) 
+            return [];
+
+        return await repository.GetObjectivesByEmployeeIdAsync(employeeId);
+    }
 }

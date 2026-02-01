@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Moq;
 using ProjectManager.Controllers;
 using ProjectManager.Dto;
@@ -23,7 +25,16 @@ public class ObjectivesControllerTests
     {
         var objectives = new List<Objective>
         {
-            new() { Id = Guid.NewGuid(), Name = "Test", AuthorId = Guid.NewGuid(), Comment = "Test", Priority = 1, Status = Status.ToDo, ProjectId = Guid.NewGuid() }
+            new()
+            {
+                Id = Guid.NewGuid(), 
+                Name = "Test", 
+                AuthorId = Guid.NewGuid(), 
+                Comment = "Test", 
+                Priority = 1, 
+                Status = Status.ToDo, 
+                ProjectId = Guid.NewGuid()
+            }
         };
         _mockService.Setup(s => s.GetAllAsync()).ReturnsAsync(objectives);
 
@@ -39,7 +50,16 @@ public class ObjectivesControllerTests
     public async Task GetById_ShouldReturnObjective_WhenExists()
     {
         var id = Guid.NewGuid();
-        var objective = new Objective { Id = id, Name = "Test", AuthorId = Guid.NewGuid(), Comment = "Test", Priority = 1, Status = Status.ToDo, ProjectId = Guid.NewGuid() };
+        var objective = new Objective
+        {
+            Id = id, 
+            Name = "Test", 
+            AuthorId = Guid.NewGuid(), 
+            Comment = "Test", 
+            Priority = 1, 
+            Status = Status.ToDo, 
+            ProjectId = Guid.NewGuid()
+        };
         _mockService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(objective);
 
         var result = await _controller.GetById(id);
@@ -117,7 +137,16 @@ public class ObjectivesControllerTests
     {
         var id = Guid.NewGuid();
         var dto = new ObjectiveDto(id, "Test", Guid.NewGuid(), Guid.NewGuid(), Status.ToDo, "Test", 1, Guid.NewGuid());
-        var existing = new Objective { Id = id, Name = "Old", AuthorId = Guid.NewGuid(), Comment = "Old", Priority = 0, Status = Status.ToDo, ProjectId = Guid.NewGuid() };
+        var existing = new Objective
+        {
+            Id = id, 
+            Name = "Old", 
+            AuthorId = Guid.NewGuid(), 
+            Comment = "Old", 
+            Priority = 0, 
+            Status = Status.ToDo, 
+            ProjectId = Guid.NewGuid()
+        };
         _mockService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(existing);
         _mockService.Setup(s => s.UpdateAsync(It.IsAny<Objective>())).Returns(Task.CompletedTask);
 
@@ -141,7 +170,16 @@ public class ObjectivesControllerTests
     public async Task Delete_ShouldReturnNoContent_WhenExists()
     {
         var id = Guid.NewGuid();
-        var existing = new Objective { Id = id, Name = "Test", AuthorId = Guid.NewGuid(), Comment = "Test", Priority = 1, Status = Status.ToDo, ProjectId = Guid.NewGuid() };
+        var existing = new Objective
+        {
+            Id = id, 
+            Name = "Test", 
+            AuthorId = Guid.NewGuid(), 
+            Comment = "Test", 
+            Priority = 1, 
+            Status = Status.ToDo, 
+            ProjectId = Guid.NewGuid()
+        };
         _mockService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(existing);
         _mockService.Setup(s => s.DeleteAsync(id)).Returns(Task.CompletedTask);
 
@@ -169,7 +207,16 @@ public class ObjectivesControllerTests
     {
         var objectiveId = Guid.NewGuid();
         var employeeId = Guid.NewGuid();
-        var objective = new Objective { Id = objectiveId, Name = "Test", AuthorId = Guid.NewGuid(), Comment = "Test", Priority = 1, Status = Status.ToDo, ProjectId = Guid.NewGuid() };
+        var objective = new Objective
+        {
+            Id = objectiveId, 
+            Name = "Test", 
+            AuthorId = Guid.NewGuid(), 
+            Comment = "Test", 
+            Priority = 1, 
+            Status = Status.ToDo, 
+            ProjectId = Guid.NewGuid()
+        };
         _mockService.Setup(s => s.GetByIdAsync(objectiveId)).ReturnsAsync(objective);
         _mockService.Setup(s => s.IsEmployeeInObjectiveProjectAsync(objectiveId, employeeId)).ReturnsAsync(false);
 
@@ -185,7 +232,16 @@ public class ObjectivesControllerTests
     {
         var objectiveId = Guid.NewGuid();
         var employeeId = Guid.NewGuid();
-        var objective = new Objective { Id = objectiveId, Name = "Test", AuthorId = Guid.NewGuid(), Comment = "Test", Priority = 1, Status = Status.ToDo, ProjectId = Guid.NewGuid() };
+        var objective = new Objective
+        {
+            Id = objectiveId, 
+            Name = "Test", 
+            AuthorId = Guid.NewGuid(), 
+            Comment = "Test", 
+            Priority = 1, 
+            Status = Status.ToDo, 
+            ProjectId = Guid.NewGuid()
+        };
         _mockService.Setup(s => s.GetByIdAsync(objectiveId)).ReturnsAsync(objective);
         _mockService.Setup(s => s.IsEmployeeInObjectiveProjectAsync(objectiveId, employeeId)).ReturnsAsync(true);
         _mockService.Setup(s => s.UpdateAsync(It.IsAny<Objective>())).Returns(Task.CompletedTask);
@@ -212,12 +268,139 @@ public class ObjectivesControllerTests
     {
         var objectiveId = Guid.NewGuid();
         var executorId = Guid.NewGuid();
-        var existing = new Objective { Id = objectiveId, Name = "Test", AuthorId = Guid.NewGuid(), Comment = "Test", Priority = 1, Status = Status.ToDo, ProjectId = Guid.NewGuid() };
+        var existing = new Objective 
+        { 
+            Id = objectiveId, 
+            Name = "Test", 
+            AuthorId = Guid.NewGuid(), 
+            Comment = "Test", 
+            Priority = 1, 
+            Status = Status.ToDo, 
+            ProjectId = Guid.NewGuid() 
+        };
         _mockService.Setup(s => s.GetByIdAsync(objectiveId)).ReturnsAsync(existing);
         _mockService.Setup(s => s.UpdateAsync(It.IsAny<Objective>())).Returns(Task.CompletedTask);
 
         var result = await _controller.UpdateExecutor(objectiveId, executorId);
 
         Assert.IsType<NoContentResult>(result);
+    }
+    
+    [Fact]
+    public async Task UpdateObjectiveStatus_ShouldReturnNoContent_WhenSuccess()
+    {
+        var objectiveId = Guid.NewGuid();
+        var status = Status.InProgress;
+        var userId = "testUser";
+        var roles = new List<string> { "сотрудник" };
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity([
+                    new Claim(ClaimTypes.NameIdentifier, userId),
+                    new Claim(ClaimTypes.Role, roles[0])
+                ]))
+            }
+        };
+
+        _mockService.Setup(s => s.UpdateObjectiveStatusAsync(objectiveId, status, userId, roles))
+            .ReturnsAsync(true);
+
+        var result = await _controller.UpdateObjectiveStatus(objectiveId, status);
+
+        Assert.IsType<NoContentResult>(result);
+    }
+
+    [Fact]
+    public async Task UpdateObjectiveStatus_ShouldReturnForbid_WhenFailed()
+    {
+        var objectiveId = Guid.NewGuid();
+        var status = Status.InProgress;
+        var userName = "testUser";
+        var roles = new List<string> { "сотрудник" };
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity([
+                    new Claim(ClaimTypes.Name, userName),
+                    new Claim(ClaimTypes.Role, roles[0])
+                ]))
+            }
+        };
+
+        _mockService.Setup(s => s.UpdateObjectiveStatusAsync(objectiveId, status, userName, roles))
+            .ReturnsAsync(false);
+
+        var result = await _controller.UpdateObjectiveStatus(objectiveId, status);
+
+        Assert.IsType<ForbidResult>(result);
+    }
+    
+    [Fact]
+    public async Task GetObjectivesForManagerProjects_ShouldReturnForbid_WhenUserIdentityIsNull()
+    {
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal() }
+        };
+
+        var result = await _controller.GetObjectivesForManagerProjects();
+
+        Assert.IsType<ForbidResult>(result);
+    }
+
+    [Fact]
+    public async Task GetObjectivesForManagerProjects_ShouldReturnForbid_WhenUserNameIsNullOrEmpty()
+    {
+        var claimsIdentity = new ClaimsIdentity();
+        claimsIdentity.AddClaim(new Claim(ClaimTypes.Name, ""));
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(claimsIdentity) }
+        };
+
+        var result = await _controller.GetObjectivesForManagerProjects();
+
+        Assert.IsType<ForbidResult>(result);
+    }
+
+    [Fact]
+    public async Task GetObjectivesForManagerProjects_ShouldReturnOkWithObjectives_WhenValidUser()
+    {
+        var userId = "manager";
+        var objectives = new List<Objective>
+        {
+            new()
+            {
+            Id = Guid.NewGuid(), 
+            Name = "Test", 
+            AuthorId = Guid.NewGuid(), 
+            Comment = "Test", 
+            Priority = 1, 
+            Status = Status.ToDo, 
+            ProjectId = Guid.NewGuid()
+            }
+        };
+
+        _mockService.Setup(s => s.GetObjectivesForManagerProjectsAsync(userId))
+            .ReturnsAsync(objectives);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, userId) }))
+            }
+        };
+
+        var result = await _controller.GetObjectivesForManagerProjects();
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnValue = Assert.IsType<List<Objective>>(okResult.Value);
+        Assert.Equal(objectives, returnValue);
     }
 }

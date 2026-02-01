@@ -25,8 +25,22 @@ public class ProjectRepositoryTests
     {
         var projects = new List<Project>
         {
-            new() { Id = Guid.NewGuid(), Name = "1", CustomerName = "Test", ExecutorName = "Test", Priority = 1  },
-            new() { Id = Guid.NewGuid(), Name = "2", CustomerName = "Test", ExecutorName = "Test", Priority = 1 }
+            new()
+            {
+                Id = Guid.NewGuid(), 
+                Name = "1", 
+                CustomerName = "Test", 
+                ExecutorName = "Test", 
+                Priority = 1
+            },
+            new()
+            {
+                Id = Guid.NewGuid(), 
+                Name = "2", 
+                CustomerName = "Test", 
+                ExecutorName = "Test", 
+                Priority = 1
+            }
         };
         _context.Projects.AddRange(projects);
         await _context.SaveChangesAsync();
@@ -45,10 +59,31 @@ public class ProjectRepositoryTests
         var empId1 = Guid.NewGuid();
         var empId2 = Guid.NewGuid();
 
-        _context.Projects.Add(new Project { Id = projectId, Name = "Test", CustomerName = "Test", ExecutorName = "Test", Priority = 1 });
+        _context.Projects.Add(new Project
+        {
+            Id = projectId, 
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            Priority = 1
+        });
         _context.Employees.AddRange(
-            new Employee { Id = empId1, FirstName = "1", LastName = "Test", Patronymic =  "Test", Mail = "Test" },
-            new Employee { Id = empId2, FirstName = "2", LastName = "Test", Patronymic =  "Test", Mail = "Test" }
+            new Employee
+            {
+                Id = empId1, 
+                FirstName = "1", 
+                LastName = "Test", 
+                Patronymic =  "Test", 
+                Mail = "Test"
+            },
+            new Employee
+            {
+                Id = empId2, 
+                FirstName = "2", 
+                LastName = "Test", 
+                Patronymic =  "Test", 
+                Mail = "Test"
+            }
         );
         _context.EmployeeProjects.AddRange(
             new EmployeeProject { ProjectId = projectId, EmployeeId = empId1 },
@@ -70,7 +105,10 @@ public class ProjectRepositoryTests
         var project = new Project 
         { 
             Id = Guid.NewGuid(), 
-            Name = "New", CustomerName = "Test", ExecutorName = "Test", Priority = 1
+            Name = "New", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            Priority = 1
         };
 
         await _repository.AddAsync(project);
@@ -87,7 +125,10 @@ public class ProjectRepositoryTests
         var project = new Project 
         { 
             Id = Guid.NewGuid(), 
-            Name = "Test", CustomerName = "Test", ExecutorName = "Test", Priority = 1
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            Priority = 1
         };
         _context.Projects.Add(project);
         await _context.SaveChangesAsync();
@@ -109,8 +150,22 @@ public class ProjectRepositoryTests
         var projectId = Guid.NewGuid();
         var empId = Guid.NewGuid();
         
-        _context.Projects.Add(new Project { Id = projectId, Name = "Test", CustomerName = "Test", ExecutorName = "Test", Priority = 1 });
-        _context.Employees.Add(new Employee { Id = empId, FirstName = "Test", LastName = "Test", Patronymic =  "Test", Mail = "Test" });
+        _context.Projects.Add(new Project
+        {
+            Id = projectId, 
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            Priority = 1
+        });
+        _context.Employees.Add(new Employee
+        {
+            Id = empId, 
+            FirstName = "Test", 
+            LastName = "Test", 
+            Patronymic =  "Test", 
+            Mail = "Test"
+        });
         _context.EmployeeProjects.Add(new EmployeeProject { ProjectId = projectId, EmployeeId = empId });
         await _context.SaveChangesAsync();
 
@@ -139,8 +194,22 @@ public class ProjectRepositoryTests
     {
         var projectId = Guid.NewGuid();
         var empId = Guid.NewGuid();
-        _context.Projects.Add(new Project { Id = projectId, Name = "Test", CustomerName = "Test", ExecutorName = "Test", Priority = 1 });
-        _context.Employees.Add(new Employee { Id = empId, FirstName = "Test", LastName = "Test", Patronymic =  "Test", Mail = "Test" });
+        _context.Projects.Add(new Project
+        {
+            Id = projectId, 
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            Priority = 1
+        });
+        _context.Employees.Add(new Employee
+        {
+            Id = empId, 
+            FirstName = "Test", 
+            LastName = "Test", 
+            Patronymic =  "Test", 
+            Mail = "Test"
+        });
         await _context.SaveChangesAsync();
 
         await _repository.AddEmployeeToProjectAsync(projectId, empId);
@@ -370,5 +439,55 @@ public class ProjectRepositoryTests
 
         var objectiveExists = await _context.Objectives.AnyAsync(o => o.Id == objectiveId);
         Assert.True(objectiveExists);
+    }
+    
+    [Fact]
+    public async Task GetProjectsByDirectorIdAsync_ShouldReturnProjects_WhenExists()
+    {
+        var directorId = Guid.NewGuid();
+        var project1 = new Project
+        {
+            Id = Guid.NewGuid(), 
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            Priority = 1, 
+            DirectorId = directorId
+        };
+        var project2 = new Project
+        {
+            Id = Guid.NewGuid(), 
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            Priority = 1, 
+            DirectorId = directorId
+        };
+        var otherProject = new Project
+        {
+            Id = Guid.NewGuid(), 
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            Priority = 1
+        };
+
+        await _context.Projects.AddRangeAsync(project1, project2, otherProject);
+        await _context.SaveChangesAsync();
+
+        var result = await _repository.GetProjectsByDirectorIdAsync(directorId);
+
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, p => p.Id == project1.Id);
+        Assert.Contains(result, p => p.Id == project2.Id);
+        Assert.DoesNotContain(result, p => p.Id == otherProject.Id);
+    }
+
+    [Fact]
+    public async Task GetProjectsByDirectorIdAsync_ShouldReturnEmptyList_WhenNoProjects()
+    {
+        var result = await _repository.GetProjectsByDirectorIdAsync(Guid.NewGuid());
+
+        Assert.Empty(result);
     }
 }

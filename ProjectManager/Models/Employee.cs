@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Identity;
 using ProjectManager.Models.Base;
 
 namespace ProjectManager.Models;
@@ -22,4 +23,8 @@ public class Employee : BaseModel
     public ICollection<Objective> AuthoredObjectives { get; set; } = new List<Objective>();
 
     public ICollection<Objective> AssignedObjectives { get; set; } = new List<Objective>();
+    
+    [StringLength(450)]
+    public string? UserId { get; set; }
+    public IdentityUser? User { get; set; }
 }

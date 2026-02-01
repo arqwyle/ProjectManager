@@ -72,4 +72,24 @@ public class ObjectiveRepository(AppDbContext context) : IObjectiveRepository
                 (o, ep) => ep.EmployeeId)
             .AnyAsync(id => id == employeeId);
     }
+    
+    public async Task<List<Objective>> GetObjectivesByDirectorIdAsync(Guid directorId)
+    {
+        return await context.Objectives
+            .Include(o => o.Project)
+            .Where(o => o.Project!.DirectorId == directorId)
+            .ToListAsync();
+    }
+    
+    public async Task<Objective?> GetObjectiveByIdAndAssigneeAsync(Guid objectiveId, Guid? assigneeId)
+    {
+        return await context.Objectives
+            .FirstOrDefaultAsync(o => o.Id == objectiveId && o.ExecutorId == assigneeId);
+    }
+    
+    public async Task UpdateObjectiveAsync(Objective objective)
+    {
+        context.Objectives.Update(objective);
+        await context.SaveChangesAsync();
+    }
 }

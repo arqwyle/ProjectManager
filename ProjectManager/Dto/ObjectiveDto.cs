@@ -9,7 +9,7 @@ public record ObjectiveDto(
     [Required] Guid AuthorId,
     Guid? ExecutorId,
     Status Status,
-    string Comment,
+    string? Comment,
     [Required] int Priority,
     [Required] Guid ProjectId
 );

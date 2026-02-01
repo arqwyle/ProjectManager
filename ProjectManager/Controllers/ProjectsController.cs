@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using ProjectManager.Dto;
 using ProjectManager.Models;
 using ProjectManager.Services.Interfaces;
@@ -9,6 +11,24 @@ namespace ProjectManager.Controllers;
 [Route("api/[controller]")]
 public class ProjectsController(IProjectService service) : ControllerBase
 {
+    private static ProjectDto MapToDto(Project p)
+    {
+        var employeeIds = p.EmployeeProjects.Select(ep => ep.EmployeeId).ToList();
+        
+        return new ProjectDto(
+            p.Id,
+            p.Name,
+            p.CustomerName,
+            p.ExecutorName,
+            p.StartTime,
+            p.EndTime,
+            p.Priority,
+            p.DirectorId,
+            employeeIds
+        );
+    }
+
+    [Authorize(Roles = "руководитель")]
     [HttpGet]
     public async Task<ActionResult<List<ProjectDto>>> GetAll(
         [FromQuery] string? customerName = null,
@@ -22,14 +42,16 @@ public class ProjectsController(IProjectService service) : ControllerBase
         var projects = await service.GetAllAsync(customerName, executorName, startTimeFrom, startTimeTo, priorities, sortBy, isSortAscending);
         return Ok(projects.Select(MapToDto).ToList());
     }
-
+    
+    [Authorize(Roles = "руководитель")]
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ProjectDto>> GetById(Guid id)
     {
         var project = await service.GetByIdAsync(id);
         return project == null ? NotFound() : Ok(MapToDto(project));
     }
-
+    
+    [Authorize(Roles = "руководитель")]
     [HttpPost]
     public async Task<ActionResult<ProjectCreateDto>> Create(ProjectCreateDto dto)
     {
@@ -38,6 +60,7 @@ public class ProjectsController(IProjectService service) : ControllerBase
         
         var project = new Project
         {
+            Id = Guid.NewGuid(),
             Name = dto.Name,
             CustomerName = dto.CustomerName,
             ExecutorName = dto.ExecutorName,
@@ -50,13 +73,12 @@ public class ProjectsController(IProjectService service) : ControllerBase
         var created = await service.AddAsync(project);
 
         foreach (var empId in dto.EmployeeIds)
-        {
             await service.AddEmployeeToProjectAsync(created.Id, empId);
-        }
 
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, MapToDto(created));
     }
     
+    [Authorize(Policy = "RequireManagerOrAbove")]
     [HttpPost("{projectId:guid}/documents")]
     public async Task<IActionResult> UploadDocuments(Guid projectId, List<IFormFile>? files)
     {
@@ -80,29 +102,8 @@ public class ProjectsController(IProjectService service) : ControllerBase
 
         return Ok("Documents uploaded successfully");
     }
-    
-    [HttpPost("{projectId:guid}/employees/{employeeId:guid}")]
-    public async Task<IActionResult> AddEmployeeToProject(Guid projectId, Guid employeeId)
-    {
-        var project = await service.GetByIdAsync(projectId);
-        if (project == null)
-            return NotFound("Project not found");
 
-        await service.AddEmployeeToProjectAsync(projectId, employeeId);
-        return NoContent();
-    }
-    
-    [HttpDelete("{projectId:guid}/employees/{employeeId:guid}")]
-    public async Task<IActionResult> RemoveEmployeeFromProject(Guid projectId, Guid employeeId)
-    {
-        var project = await service.GetByIdAsync(projectId);
-        if (project == null)
-            return NotFound("Project not found");
-
-        await service.RemoveEmployeeFromProjectAsync(projectId, employeeId);
-        return NoContent();
-    }
-
+    [Authorize(Roles = "руководитель")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, ProjectDto dto)
     {
@@ -124,7 +125,8 @@ public class ProjectsController(IProjectService service) : ControllerBase
 
         return NoContent();
     }
-
+    
+    [Authorize(Roles = "руководитель")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
@@ -135,7 +137,32 @@ public class ProjectsController(IProjectService service) : ControllerBase
         await service.DeleteAsync(id);
         return NoContent();
     }
-    
+
+    [Authorize(Policy = "RequireManagerOrAbove")]
+    [HttpPost("{projectId:guid}/employees/{employeeId:guid}")]
+    public async Task<IActionResult> AddEmployeeToProject(Guid projectId, Guid employeeId)
+    {
+        var project = await service.GetByIdAsync(projectId);
+        if (project == null)
+            return NotFound("Project not found");
+
+        await service.AddEmployeeToProjectAsync(projectId, employeeId);
+        return NoContent();
+    }
+
+    [Authorize(Policy = "RequireManagerOrAbove")]
+    [HttpDelete("{projectId:guid}/employees/{employeeId:guid}")]
+    public async Task<IActionResult> RemoveEmployeeFromProject(Guid projectId, Guid employeeId)
+    {
+        var project = await service.GetByIdAsync(projectId);
+        if (project == null)
+            return NotFound("Project not found");
+
+        await service.RemoveEmployeeFromProjectAsync(projectId, employeeId);
+        return NoContent();
+    }
+
+    [Authorize(Policy = "RequireManagerOrAbove")]
     [HttpPost("{projectId:guid}/objectives/{objectiveId:guid}")]
     public async Task<IActionResult> AddObjectiveToProject(Guid projectId, Guid objectiveId)
     {
@@ -146,7 +173,8 @@ public class ProjectsController(IProjectService service) : ControllerBase
         await service.AddObjectiveToProjectAsync(projectId, objectiveId);
         return NoContent();
     }
-
+    
+    [Authorize(Policy = "RequireManagerOrAbove")]
     [HttpDelete("{projectId:guid}/objectives/{objectiveId:guid}")]
     public async Task<IActionResult> RemoveObjectiveFromProject(Guid projectId, Guid objectiveId)
     {
@@ -157,21 +185,16 @@ public class ProjectsController(IProjectService service) : ControllerBase
         await service.RemoveObjectiveFromProjectAsync(projectId, objectiveId);
         return NoContent();
     }
-
-    private static ProjectDto MapToDto(Project p)
+    
+    [Authorize(Policy = "RequireManagerOrAbove")]
+    [HttpGet("my-projects")]
+    public async Task<IActionResult> GetMyProjects()
     {
-        var employeeIds = p.EmployeeProjects.Select(ep => ep.EmployeeId).ToList();
-        
-        return new ProjectDto(
-            p.Id,
-            p.Name,
-            p.CustomerName,
-            p.ExecutorName,
-            p.StartTime,
-            p.EndTime,
-            p.Priority,
-            p.DirectorId,
-            employeeIds
-        );
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return Forbid();
+
+        var projects = await service.GetManagerProjectsAsync(userId);
+        return Ok(projects);
     }
 }

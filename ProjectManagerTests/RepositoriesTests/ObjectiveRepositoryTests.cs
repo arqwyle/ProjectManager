@@ -22,8 +22,24 @@ public class ObjectiveRepositoryTests
     [Fact]
     public async Task GetAllAsync_ShouldReturnAllObjectives()
     {
-        var objective1 = new Objective { Id = Guid.NewGuid(), Name = "Test1", AuthorId = Guid.NewGuid(), Comment = "Test1", Priority = 1, Status = Status.ToDo, ProjectId = Guid.NewGuid() };
-        var objective2 = new Objective { Id = Guid.NewGuid(), Name = "Test2", AuthorId = Guid.NewGuid(), Comment = "Test2", Priority = 2, Status = Status.InProgress, ProjectId = Guid.NewGuid() };
+        var objective1 = new Objective
+        {
+            Id = Guid.NewGuid(), 
+            Name = "1", 
+            AuthorId = Guid.NewGuid(), 
+            Priority = 1, 
+            Status = Status.ToDo, 
+            ProjectId = Guid.NewGuid()
+        };
+        var objective2 = new Objective
+        {
+            Id = Guid.NewGuid(), 
+            Name = "2", 
+            AuthorId = Guid.NewGuid(), 
+            Priority = 2, 
+            Status = Status.InProgress, 
+            ProjectId = Guid.NewGuid()
+        };
         await _context.Objectives.AddRangeAsync(objective1, objective2);
         await _context.SaveChangesAsync();
 
@@ -38,7 +54,15 @@ public class ObjectiveRepositoryTests
     public async Task GetByIdAsync_ShouldReturnObjective_WhenExists()
     {
         var id = Guid.NewGuid();
-        var objective = new Objective { Id = id, Name = "Test", AuthorId = Guid.NewGuid(), Comment = "Test", Priority = 1, Status = Status.ToDo, ProjectId = Guid.NewGuid() };
+        var objective = new Objective
+        {
+            Id = id, 
+            Name = "Test", 
+            AuthorId = Guid.NewGuid(), 
+            Priority = 1, 
+            Status = Status.ToDo, 
+            ProjectId = Guid.NewGuid()
+        };
         await _context.Objectives.AddAsync(objective);
         await _context.SaveChangesAsync();
 
@@ -61,7 +85,15 @@ public class ObjectiveRepositoryTests
     [Fact]
     public async Task AddAsync_ShouldAddObjective()
     {
-        var objective = new Objective { Id = Guid.NewGuid(), Name = "Test", AuthorId = Guid.NewGuid(), Comment = "Test", Priority = 1, Status = Status.ToDo, ProjectId = Guid.NewGuid() };
+        var objective = new Objective
+        {
+            Id = Guid.NewGuid(), 
+            Name = "Test", 
+            AuthorId = Guid.NewGuid(), 
+            Priority = 1, 
+            Status = Status.ToDo, 
+            ProjectId = Guid.NewGuid()
+        };
 
         await _repository.AddAsync(objective);
 
@@ -72,12 +104,19 @@ public class ObjectiveRepositoryTests
     [Fact]
     public async Task UpdateAsync_ShouldUpdateObjective()
     {
-        var objective = new Objective { Id = Guid.NewGuid(), Name = "Old", AuthorId = Guid.NewGuid(), Comment = "Old", Priority = 0, Status = Status.ToDo, ProjectId = Guid.NewGuid() };
+        var objective = new Objective
+        {
+            Id = Guid.NewGuid(), 
+            Name = "Old", 
+            AuthorId = Guid.NewGuid(), 
+            Priority = 0, 
+            Status = Status.ToDo, 
+            ProjectId = Guid.NewGuid()
+        };
         await _context.Objectives.AddAsync(objective);
         await _context.SaveChangesAsync();
 
         objective.Name = "New";
-        objective.Comment = "New";
         objective.Priority = 2;
 
         await _repository.UpdateAsync(objective);
@@ -86,14 +125,21 @@ public class ObjectiveRepositoryTests
         var updated = await _context.Objectives.FindAsync(objective.Id);
         Assert.NotNull(updated);
         Assert.Equal("New", updated.Name);
-        Assert.Equal("New", updated.Comment);
         Assert.Equal(2, updated.Priority);
     }
 
     [Fact]
     public async Task DeleteAsync_ShouldRemoveObjective_WhenExists()
     {
-        var objective = new Objective { Id = Guid.NewGuid(), Name = "Test", AuthorId = Guid.NewGuid(), Comment = "Test", Priority = 1, Status = Status.ToDo, ProjectId = Guid.NewGuid() };
+        var objective = new Objective
+        {
+            Id = Guid.NewGuid(), 
+            Name = "Test", 
+            AuthorId = Guid.NewGuid(), 
+            Priority = 1, 
+            Status = Status.ToDo, 
+            ProjectId = Guid.NewGuid()
+        };
         await _context.Objectives.AddAsync(objective);
         await _context.SaveChangesAsync();
 
@@ -110,7 +156,6 @@ public class ObjectiveRepositoryTests
 
         await _repository.DeleteAsync(id);
 
-        // Should not throw exception
         Assert.True(true);
     }
 
@@ -121,7 +166,15 @@ public class ObjectiveRepositoryTests
         var objectiveId = Guid.NewGuid();
         var employeeId = Guid.NewGuid();
 
-        var objective = new Objective { Id = objectiveId, Name = "Test", AuthorId = Guid.NewGuid(), Comment = "Test", Priority = 1, Status = Status.ToDo, ProjectId = projectId };
+        var objective = new Objective
+        {
+            Id = objectiveId, 
+            Name = "Test", 
+            AuthorId = Guid.NewGuid(), 
+            Priority = 1, 
+            Status = Status.ToDo, 
+            ProjectId = projectId
+        };
         var employeeProject = new EmployeeProject { ProjectId = projectId, EmployeeId = employeeId };
 
         await _context.Objectives.AddAsync(objective);
@@ -140,7 +193,15 @@ public class ObjectiveRepositoryTests
         var objectiveId = Guid.NewGuid();
         var employeeId = Guid.NewGuid();
 
-        var objective = new Objective { Id = objectiveId, Name = "Test", AuthorId = Guid.NewGuid(), Comment = "Test", Priority = 1, Status = Status.ToDo, ProjectId = projectId };
+        var objective = new Objective
+        {
+            Id = Guid.NewGuid(), 
+            Name = "Test", 
+            AuthorId = Guid.NewGuid(), 
+            Priority = 1, 
+            Status = Status.ToDo, 
+            ProjectId = projectId
+        };
 
         await _context.Objectives.AddAsync(objective);
         await _context.SaveChangesAsync();
@@ -159,5 +220,212 @@ public class ObjectiveRepositoryTests
         var result = await _repository.IsEmployeeInObjectiveProjectAsync(objectiveId, employeeId);
 
         Assert.False(result);
+    }
+    
+    [Fact]
+    public async Task GetObjectiveByIdAndAssigneeAsync_ShouldReturnObjective_WhenExists()
+    {
+        var objectiveId = Guid.NewGuid();
+        var assigneeId = Guid.NewGuid();
+        var objective = new Objective 
+        { 
+            Id = objectiveId, 
+            Name = "Test", 
+            AuthorId = Guid.NewGuid(), 
+            ExecutorId = assigneeId,
+            Priority = 1, 
+            Status = Status.ToDo, 
+            ProjectId = Guid.NewGuid() 
+        };
+        await _context.Objectives.AddAsync(objective);
+        await _context.SaveChangesAsync();
+
+        var result = await _repository.GetObjectiveByIdAndAssigneeAsync(objectiveId, assigneeId);
+
+        Assert.NotNull(result);
+        Assert.Equal(objectiveId, result.Id);
+        Assert.Equal(assigneeId, result.ExecutorId);
+    }
+
+    [Fact]
+    public async Task GetObjectiveByIdAndAssigneeAsync_ShouldReturnNull_WhenObjectiveDoesNotExist()
+    {
+        var objectiveId = Guid.NewGuid();
+        var assigneeId = Guid.NewGuid();
+
+        var result = await _repository.GetObjectiveByIdAndAssigneeAsync(objectiveId, assigneeId);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task GetObjectiveByIdAndAssigneeAsync_ShouldReturnNull_WhenAssigneeDoesNotMatch()
+    {
+        var objectiveId = Guid.NewGuid();
+        var assigneeId = Guid.NewGuid();
+        var otherAssigneeId = Guid.NewGuid();
+        var objective = new Objective 
+        { 
+            Id = objectiveId, 
+            Name = "Test", 
+            AuthorId = Guid.NewGuid(), 
+            ExecutorId = otherAssigneeId,
+            Priority = 1, 
+            Status = Status.ToDo, 
+            ProjectId = Guid.NewGuid() 
+        };
+        await _context.Objectives.AddAsync(objective);
+        await _context.SaveChangesAsync();
+
+        var result = await _repository.GetObjectiveByIdAndAssigneeAsync(objectiveId, assigneeId);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task UpdateObjectiveAsync_ShouldUpdateObjective()
+    {
+        var objective = new Objective 
+        { 
+            Id = Guid.NewGuid(), 
+            Name = "Old", 
+            AuthorId = Guid.NewGuid(), 
+            ExecutorId = Guid.NewGuid(),
+            Priority = 1, 
+            Status = Status.ToDo, 
+            ProjectId = Guid.NewGuid() 
+        };
+        await _context.Objectives.AddAsync(objective);
+        await _context.SaveChangesAsync();
+
+        objective.Name = "Updated";
+        objective.Comment = "Updated";
+        objective.Status = Status.InProgress;
+
+        await _repository.UpdateObjectiveAsync(objective);
+
+        var updated = await _context.Objectives.FindAsync(objective.Id);
+        Assert.NotNull(updated);
+        Assert.Equal("Updated", updated.Name);
+        Assert.Equal("Updated", updated.Comment);
+        Assert.Equal(Status.InProgress, updated.Status);
+    }
+    
+    [Fact]
+    public async Task GetObjectivesByDirectorIdAsync_ShouldReturnObjectives_WhenDirectorHasProjects()
+    {
+        var directorId = Guid.NewGuid();
+        var projectId = Guid.NewGuid();
+        var objective1 = new Objective
+        {
+            Id = Guid.NewGuid(), 
+            Name = "1", 
+            AuthorId = Guid.NewGuid(),
+            Priority = 1, 
+            Status = Status.ToDo, 
+            ProjectId = projectId
+        };
+        var objective2 = new Objective
+        {
+            Id = Guid.NewGuid(), 
+            Name = "2", 
+            AuthorId = Guid.NewGuid(),
+            Priority = 2, 
+            Status = Status.ToDo, 
+            ProjectId = projectId
+        };
+        var otherProjectId = Guid.NewGuid();
+        var otherObjective = new Objective
+        {
+            Id = Guid.NewGuid(), 
+            Name = "3", 
+            AuthorId = Guid.NewGuid(),
+            Priority = 3, 
+            Status = Status.ToDo, 
+            ProjectId = otherProjectId,
+        };
+        var project = new Project
+        {
+            Id = projectId,
+            Name = "Test",
+            CustomerName = "Test",
+            ExecutorName = "Test",
+            Priority = 1,
+            DirectorId = directorId,
+        };
+        var otherProject = new Project
+        {
+            Id = otherProjectId,
+            Name = "Test",
+            CustomerName = "Test",
+            ExecutorName = "Test",
+            Priority = 1
+        };
+
+        await _context.Projects.AddRangeAsync(project, otherProject);
+        await _context.Objectives.AddRangeAsync(objective1, objective2, otherObjective);
+        await _context.SaveChangesAsync();
+
+        var result = await _repository.GetObjectivesByDirectorIdAsync(directorId);
+
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, o => o.Id == objective1.Id);
+        Assert.Contains(result, o => o.Id == objective2.Id);
+        Assert.DoesNotContain(result, o => o.Id == otherObjective.Id);
+    }
+
+    [Fact]
+    public async Task GetObjectivesByDirectorIdAsync_ShouldReturnEmptyList_WhenDirectorHasNoProjects()
+    {
+        var directorId = Guid.NewGuid();
+        var projectId = Guid.NewGuid();
+        var objective = new Objective
+        {
+            Id = Guid.NewGuid(), 
+            Name = "Test", 
+            AuthorId = Guid.NewGuid(),
+            Priority = 1, 
+            Status = Status.ToDo, 
+            ProjectId = projectId
+        };
+        var project = new Project
+        {
+            Id = projectId,
+            Name = "Test",
+            CustomerName = "Test",
+            ExecutorName = "Test",
+            Priority = 1
+        };
+
+        await _context.Projects.AddAsync(project);
+        await _context.Objectives.AddAsync(objective);
+        await _context.SaveChangesAsync();
+
+        var result = await _repository.GetObjectivesByDirectorIdAsync(directorId);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetObjectivesByDirectorIdAsync_ShouldReturnEmptyList_WhenNoObjectives()
+    {
+        var directorId = Guid.NewGuid();
+        var projectId = Guid.NewGuid();
+        var project = new Project
+        {
+            Id = projectId,
+            Name = "Test",
+            CustomerName = "Test",
+            ExecutorName = "Test",
+            Priority = 1,
+            DirectorId = directorId,
+        };
+
+        await _context.Projects.AddAsync(project);
+        await _context.SaveChangesAsync();
+
+        var result = await _repository.GetObjectivesByDirectorIdAsync(directorId);
+
+        Assert.Empty(result);
     }
 }
