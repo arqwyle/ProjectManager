@@ -13,8 +13,7 @@ public interface IObjectiveRepository
     Task AddAsync(Objective objective);
     Task UpdateAsync(Objective objective);
     Task DeleteAsync(Guid id);
-    Task<bool> IsEmployeeInObjectiveProjectAsync(Guid objectiveId, Guid employeeId);
     Task<List<Objective>> GetObjectivesByDirectorIdAsync(Guid directorId);
     Task<Objective?> GetObjectiveByIdAndAssigneeAsync(Guid objectiveId, Guid? assigneeId);
-    Task UpdateObjectiveAsync(Objective objective);
+    Task<List<Objective>> GetObjectivesByEmployeeIdAsync(Guid employeeId);
 }

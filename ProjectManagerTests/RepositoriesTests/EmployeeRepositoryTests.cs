@@ -7,241 +7,215 @@ namespace ProjectManagerTests.RepositoriesTests;
 
 public class EmployeeRepositoryTests
 {
-    private readonly AppDbContext _context;
-    private readonly EmployeeRepository _repository;
+    private readonly DbContextOptions<AppDbContext> _options;
+    private readonly Guid _employeeId;
+    private readonly Guid _projectId;
+    private readonly Guid _authoredObjectiveId;
+    private readonly Guid _assignedObjectiveId;
 
     public EmployeeRepositoryTests()
     {
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
+        _employeeId = Guid.NewGuid();
+        _projectId = Guid.NewGuid();
+        _authoredObjectiveId = Guid.NewGuid();
+        _assignedObjectiveId = Guid.NewGuid();
 
-        _context = new AppDbContext(options);
-        _repository = new EmployeeRepository(_context);
+        var builder = new DbContextOptionsBuilder<AppDbContext>();
+        builder.UseInMemoryDatabase(Guid.NewGuid().ToString());
+        _options = builder.Options;
+
+        SeedDatabase();
     }
 
-    [Fact]
-    public async Task GetAllAsync_ShouldReturnAllEmployees()
+    private void SeedDatabase()
     {
-        var employees = new List<Employee>
-        {
-            new()
-            {
-                Id = Guid.NewGuid(), 
-                FirstName = "1", 
-                LastName = "Test", 
-                Patronymic =  "Test", 
-                Mail = "Test"
-            },
-            new()
-            {
-                Id = Guid.NewGuid(), 
-                FirstName = "2", 
-                LastName = "Test", 
-                Patronymic =  "Test", 
-                Mail = "Test"
-            }
-        };
-        _context.Employees.AddRange(employees);
-        await _context.SaveChangesAsync();
+        using var context = new AppDbContext(_options);
+        context.Database.EnsureDeleted();
+        context.Database.EnsureCreated();
 
-        var result = await _repository.GetAllAsync();
-
-        Assert.Equal(2, result.Count);
-        Assert.Contains(result, e => e.FirstName == "1");
-        Assert.Contains(result, e => e.FirstName == "2");
-    }
-
-    [Fact]
-    public async Task GetByIdAsync_ShouldReturnEmployee_WhenExists()
-    {
         var employee = new Employee
         {
-            Id = Guid.NewGuid(), 
-            FirstName = "Test", 
-            LastName = "Test", 
-            Patronymic =  "Test", 
-            Mail = "Test"
-        };
-        _context.Employees.Add(employee);
-        await _context.SaveChangesAsync();
-
-        var result = await _repository.GetByIdAsync(employee.Id);
-
-        Assert.NotNull(result);
-        Assert.Equal(employee.Id, result.Id);
-        Assert.Equal("Test", result.FirstName);
-    }
-
-    [Fact]
-    public async Task GetByIdAsync_ShouldReturnNull_WhenNotExists()
-    {
-        var result = await _repository.GetByIdAsync(Guid.NewGuid());
-
-        Assert.Null(result);
-    }
-
-    [Fact]
-    public async Task AddAsync_ShouldAddEmployee()
-    {
-        var employee = new Employee
-        {
-            Id = Guid.NewGuid(), 
-            FirstName = "Test", 
-            LastName = "Test", 
-            Patronymic =  "Test", 
+            Id = _employeeId,
+            UserId = "1",
+            FirstName = "Test",
+            LastName = "Test",
+            Patronymic = "Test",
             Mail = "Test"
         };
 
-        await _repository.AddAsync(employee);
-        await _context.SaveChangesAsync();
+        var project = new Project
+        {
+            Id = _projectId,
+            Name = "Test",
+            CustomerName = "Test",
+            ExecutorName = "Test",
+            StartTime = DateTime.Now,
+            EndTime = DateTime.Now.AddDays(1),
+            Priority = 1,
+            DirectorId = Guid.NewGuid()
+        };
 
-        var saved = await _context.Employees.FindAsync(employee.Id);
-        Assert.NotNull(saved);
-        Assert.Equal("Test", saved.FirstName);
+        var authoredObjective = new Objective
+        {
+            Id = _authoredObjectiveId,
+            Name = "Test",
+            Priority = 1,
+            AuthorId = _employeeId
+        };
+
+        var assignedObjective = new Objective
+        {
+            Id = _assignedObjectiveId,
+            Name = "Test",
+            Priority = 1,
+            ExecutorId = _employeeId
+        };
+
+        context.Employees.Add(employee);
+        context.Projects.Add(project);
+        context.Objectives.AddRange(authoredObjective, assignedObjective);
+
+        context.EmployeeProjects.Add(new EmployeeProject
+        {
+            EmployeeId = _employeeId,
+            ProjectId = _projectId
+        });
+
+        context.SaveChanges();
     }
 
     [Fact]
-    public async Task UpdateAsync_ShouldUpdateEmployee()
+    public async Task GetByIdAsync_ShouldReturnEmployee_WithIncludes()
     {
-        var employee = new Employee
+        await using var context = new AppDbContext(_options);
+        var repository = new EmployeeRepository(context);
+
+        var employee = await repository.GetByIdAsync(_employeeId);
+
+        Assert.NotNull(employee);
+        Assert.Equal(_employeeId, employee.Id);
+        Assert.Equal("1", employee.UserId);
+        Assert.Equal("Test", employee.FirstName);
+        Assert.Equal("Test", employee.LastName);
+        Assert.Equal("Test", employee.Patronymic);
+        Assert.Equal("Test", employee.Mail);
+        Assert.Single(employee.EmployeeProjects);
+        Assert.Equal(_projectId, employee.EmployeeProjects.First().ProjectId);
+        Assert.Single(employee.AuthoredObjectives);
+        Assert.Equal(_authoredObjectiveId, employee.AuthoredObjectives.First().Id);
+        Assert.Single(employee.AssignedObjectives);
+        Assert.Equal(_assignedObjectiveId, employee.AssignedObjectives.First().Id);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_ShouldReturnNull_WhenEmployeeNotFound()
+    {
+        await using var context = new AppDbContext(_options);
+        var repository = new EmployeeRepository(context);
+        var nonExistentId = Guid.NewGuid();
+
+        var employee = await repository.GetByIdAsync(nonExistentId);
+
+        Assert.Null(employee);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_ShouldReturnAllEmployees_WithIncludes()
+    {
+        await using var context = new AppDbContext(_options);
+        var repository = new EmployeeRepository(context);
+
+        var employees = await repository.GetAllAsync();
+
+        Assert.Single(employees);
+        var employee = employees[0];
+        Assert.Equal(_employeeId, employee.Id);
+        Assert.Single(employee.EmployeeProjects);
+        Assert.Single(employee.AuthoredObjectives);
+        Assert.Single(employee.AssignedObjectives);
+    }
+
+    [Fact]
+    public async Task AddAsync_ShouldAddEmployeeToDatabase()
+    {
+        await using var context = new AppDbContext(_options);
+        var repository = new EmployeeRepository(context);
+        var newEmployeeId = Guid.NewGuid();
+        var newEmployee = new Employee
         {
-            Id = Guid.NewGuid(), 
-            FirstName = "1", 
-            LastName = "Test", 
-            Patronymic =  "Test", 
+            Id = newEmployeeId,
+            UserId = "2",
+            FirstName = "Test",
+            LastName = "Test",
+            Patronymic = "Test",
             Mail = "Test"
         };
-        _context.Employees.Add(employee);
-        await _context.SaveChangesAsync();
 
-        employee.FirstName = "2";
-        await _repository.UpdateAsync(employee);
-        await _context.SaveChangesAsync();
+        await repository.AddAsync(newEmployee);
+        var savedEmployee = await context.Employees.FindAsync(newEmployeeId);
 
-        var updated = await _context.Employees.FindAsync(employee.Id);
-        Assert.NotNull(updated);
-        Assert.Equal("2", updated.FirstName);
+        Assert.NotNull(savedEmployee);
+        Assert.Equal(newEmployeeId, savedEmployee.Id);
+        Assert.Equal("2", savedEmployee.UserId);
     }
 
     [Fact]
-    public async Task DeleteAsync_ShouldRemoveEmployee()
+    public async Task UpdateAsync_ShouldUpdateEmployeeInDatabase()
     {
-        var employee = new Employee
-        {
-            Id = Guid.NewGuid(), 
-            FirstName = "Test", 
-            LastName = "Test", 
-            Patronymic =  "Test", 
-            Mail = "Test"
-        };
-        _context.Employees.Add(employee);
-        await _context.SaveChangesAsync();
-        var id = employee.Id;
+        await using var context = new AppDbContext(_options);
+        var repository = new EmployeeRepository(context);
+        var employee = await context.Employees.FindAsync(_employeeId);
+        Assert.NotNull(employee);
+        employee.FirstName = "Updated";
 
-        await _repository.DeleteAsync(id);
-        await _context.SaveChangesAsync();
+        await repository.UpdateAsync(employee);
+        var updatedEmployee = await context.Employees.FindAsync(_employeeId);
 
-        var deleted = await _context.Employees.FindAsync(id);
-        Assert.Null(deleted);
-    }
-    
-    [Fact]
-    public async Task GetEmployeeIdByNameAsync_ShouldReturnEmployeeId_WhenExists()
-    {
-        var employee = new Employee
-        {
-            Id = Guid.NewGuid(), 
-            FirstName = "Test", 
-            LastName = "Test", 
-            Patronymic = "Test", 
-            Mail = "Test",
-            UserId = "Test"
-        };
-        _context.Employees.Add(employee);
-        await _context.SaveChangesAsync();
-
-        var result = await _repository.GetEmployeeIdByUserIdAsync("Test");
-
-        Assert.NotNull(result);
-        Assert.Equal(employee.Id, result);
+        Assert.NotNull(updatedEmployee);
+        Assert.Equal("Updated", updatedEmployee.FirstName);
     }
 
     [Fact]
-    public async Task GetEmployeeIdByNameAsync_ShouldReturnNull_WhenNotExists()
+    public async Task DeleteAsync_ShouldRemoveEmployeeFromDatabase()
     {
-        var result = await _repository.GetEmployeeIdByUserIdAsync("NonExistent");
+        await using var context = new AppDbContext(_options);
+        var repository = new EmployeeRepository(context);
 
-        Assert.Equal(Guid.Empty, result);
+        await repository.DeleteAsync(_employeeId);
+        var deletedEmployee = await context.Employees.FindAsync(_employeeId);
+
+        Assert.Null(deletedEmployee);
     }
 
     [Fact]
-    public async Task GetProjectsByEmployeeIdAsync_ShouldReturnProjects_WhenEmployeeHasProjects()
+    public async Task DeleteAsync_ShouldDoNothing_WhenEmployeeNotFound()
     {
-        var employeeId = Guid.NewGuid();
-        var projectId = Guid.NewGuid();
-        var project = new Project 
-        { 
-            Id = projectId, 
-            Name = "Project1", 
-            CustomerName = "Customer1", 
-            ExecutorName = "Executor1", 
-            StartTime = DateTime.Now, 
-            EndTime = DateTime.Now.AddDays(7), 
-            Priority = 1, 
-            DirectorId = Guid.NewGuid() 
-        };
-        var employeeProject = new EmployeeProject { EmployeeId = employeeId, ProjectId = projectId };
+        await using var context = new AppDbContext(_options);
+        var repository = new EmployeeRepository(context);
+        var nonExistentId = Guid.NewGuid();
 
-        _context.Projects.Add(project);
-        _context.EmployeeProjects.Add(employeeProject);
-        await _context.SaveChangesAsync();
-
-        var result = await _repository.GetProjectsByEmployeeIdAsync(employeeId);
-
-        Assert.Single(result);
-        Assert.Equal("Project1", result[0].Name);
+        await repository.DeleteAsync(nonExistentId);
     }
 
     [Fact]
-    public async Task GetProjectsByEmployeeIdAsync_ShouldReturnEmptyList_WhenEmployeeHasNoProjects()
+    public async Task GetEmployeeIdByUserIdAsync_ShouldReturnId_WhenUserExists()
     {
-        var result = await _repository.GetProjectsByEmployeeIdAsync(Guid.NewGuid());
+        await using var context = new AppDbContext(_options);
+        var repository = new EmployeeRepository(context);
 
-        Assert.Empty(result);
+        var employeeId = await repository.GetEmployeeIdByUserIdAsync("1");
+
+        Assert.Equal(_employeeId, employeeId);
     }
 
     [Fact]
-    public async Task GetObjectivesByEmployeeIdAsync_ShouldReturnObjectives_WhenEmployeeHasObjectives()
+    public async Task GetEmployeeIdByUserIdAsync_ShouldReturnNull_WhenUserNotFound()
     {
-        var employeeId = Guid.NewGuid();
-        var objective = new Objective 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "Objective1", 
-            AuthorId = Guid.NewGuid(), 
-            ExecutorId = employeeId,
-            Status = Status.ToDo, 
-            Comment = "Comment1", 
-            Priority = 1, 
-            ProjectId = Guid.NewGuid() 
-        };
+        await using var context = new AppDbContext(_options);
+        var repository = new EmployeeRepository(context);
 
-        _context.Objectives.Add(objective);
-        await _context.SaveChangesAsync();
+        var employeeId = await repository.GetEmployeeIdByUserIdAsync("nonexistent");
 
-        var result = await _repository.GetObjectivesByEmployeeIdAsync(employeeId);
-
-        Assert.Single(result);
-        Assert.Equal("Objective1", result[0].Name);
-        Assert.Equal(employeeId, result[0].ExecutorId);
-    }
-
-    [Fact]
-    public async Task GetObjectivesByEmployeeIdAsync_ShouldReturnEmptyList_WhenEmployeeHasNoObjectives()
-    {
-        var result = await _repository.GetObjectivesByEmployeeIdAsync(Guid.NewGuid());
-
-        Assert.Empty(result);
+        Assert.Equal(Guid.Empty, employeeId);
     }
 }

@@ -54,11 +54,10 @@ public class ProjectRepository(AppDbContext context) : IProjectRepository
             .FirstOrDefaultAsync(p => p.Id == id);
     }
 
-    public async Task<Project> AddAsync(Project project)
+    public async Task AddAsync(Project project)
     {
         await context.Projects.AddAsync(project);
         await context.SaveChangesAsync();
-        return project;
     }
 
     public async Task UpdateAsync(Project project)
@@ -157,6 +156,24 @@ public class ProjectRepository(AppDbContext context) : IProjectRepository
         return await context.Projects
             .Include(ep => ep.EmployeeProjects)
             .Where(ep => ep.DirectorId == directorId)
+            .ToListAsync();
+    }
+
+    public async Task<List<Project>> GetProjectsByEmployeeIdAsync(Guid employeeId)
+    {
+        var employeeProjects = await context.EmployeeProjects
+            .Where(ep => ep.EmployeeId == employeeId)
+            .Include(ep => ep.Project)
+            .ToListAsync();
+
+        return employeeProjects.Select(ep => ep.Project).ToList();
+    }
+
+    public async Task<List<Guid>> GetProjectIdsByEmployeeIdAsync(Guid employeeId)
+    {
+        return await context.EmployeeProjects
+            .Where(ep => ep.EmployeeId == employeeId)
+            .Select(ep => ep.ProjectId)
             .ToListAsync();
     }
 }

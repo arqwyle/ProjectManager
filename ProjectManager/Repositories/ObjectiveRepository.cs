@@ -62,17 +62,6 @@ public class ObjectiveRepository(AppDbContext context) : IObjectiveRepository
         }
     }
     
-    public async Task<bool> IsEmployeeInObjectiveProjectAsync(Guid objectiveId, Guid employeeId)
-    {
-        return await context.Objectives
-            .Where(o => o.Id == objectiveId)
-            .Join(context.EmployeeProjects,
-                o => o.ProjectId,
-                ep => ep.ProjectId,
-                (o, ep) => ep.EmployeeId)
-            .AnyAsync(id => id == employeeId);
-    }
-    
     public async Task<List<Objective>> GetObjectivesByDirectorIdAsync(Guid directorId)
     {
         return await context.Objectives
@@ -86,10 +75,11 @@ public class ObjectiveRepository(AppDbContext context) : IObjectiveRepository
         return await context.Objectives
             .FirstOrDefaultAsync(o => o.Id == objectiveId && o.ExecutorId == assigneeId);
     }
-    
-    public async Task UpdateObjectiveAsync(Objective objective)
+
+    public async Task<List<Objective>> GetObjectivesByEmployeeIdAsync(Guid employeeId)
     {
-        context.Objectives.Update(objective);
-        await context.SaveChangesAsync();
+        return await context.Objectives
+            .Where(o => o.ExecutorId == employeeId)
+            .ToListAsync();
     }
 }

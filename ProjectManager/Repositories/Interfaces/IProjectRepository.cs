@@ -13,7 +13,7 @@ public interface IProjectRepository
         string? sortBy = null,
         bool isSortAscending = true);
     Task<Project?> GetByIdAsync(Guid id);
-    Task<Project> AddAsync(Project project);
+    Task AddAsync(Project project);
     Task UpdateAsync(Project project);
     Task DeleteAsync(Guid id);
     Task AddEmployeeToProjectAsync(Guid projectId, Guid employeeId);
@@ -22,4 +22,6 @@ public interface IProjectRepository
     Task AddObjectiveToProjectAsync(Guid projectId, Guid objectiveId);
     Task RemoveObjectiveFromProjectAsync(Guid projectId, Guid objectiveId);
     Task<List<Project>> GetProjectsByDirectorIdAsync(Guid directorId);
+    Task<List<Project>> GetProjectsByEmployeeIdAsync(Guid employeeId);
+    Task<List<Guid>> GetProjectIdsByEmployeeIdAsync(Guid employeeId);
 }

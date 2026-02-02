@@ -9,5 +9,5 @@ public interface IEmployeeService
     Task AddAsync(Employee employee);
     Task UpdateAsync(Employee employee);
     Task DeleteAsync(Guid id);
-    Task UpdateProjectLinksAsync(Guid employeeId, List<Guid> projectIds);
+    Task<Guid?> GetEmployeeIdByUserIdAsync(string userId);
 }

@@ -4,7 +4,7 @@ using ProjectManager.Services.Interfaces;
 
 namespace ProjectManager.Services;
 
-public class ProjectService(IProjectRepository projectRepository, IEmployeeRepository employeeRepository) : IProjectService
+public class ProjectService(IProjectRepository projectRepository) : IProjectService
 {
     public async Task<List<Project>> GetAllAsync(
         string? customerName = null,
@@ -19,7 +19,7 @@ public class ProjectService(IProjectRepository projectRepository, IEmployeeRepos
     public async Task<Project?> GetByIdAsync(Guid id)
         => await projectRepository.GetByIdAsync(id);
 
-    public async Task<Project> AddAsync(Project project)
+    public async Task AddAsync(Project project)
         => await projectRepository.AddAsync(project);
 
     public async Task UpdateAsync(Project project)
@@ -43,24 +43,9 @@ public class ProjectService(IProjectRepository projectRepository, IEmployeeRepos
     public async Task RemoveObjectiveFromProjectAsync(Guid projectId, Guid objectiveId)
         => await projectRepository.RemoveObjectiveFromProjectAsync(projectId, objectiveId);
 
-    public async Task<Guid?> GetEmployeeIdByUserId(string userId)
-        => await employeeRepository.GetEmployeeIdByUserIdAsync(userId);
+    public async Task<List<Project>> GetManagerProjectsAsync(Guid employeeId)
+        => await projectRepository.GetProjectsByDirectorIdAsync(employeeId);
 
-    public async Task<List<Project>> GetManagerProjectsAsync(string userId)
-    {
-        var employeeId = await GetEmployeeIdByUserId(userId);
-        if (employeeId == null) 
-            return [];
-
-        return await projectRepository.GetProjectsByDirectorIdAsync(employeeId.Value);
-    }
-
-    public async Task<List<Project>> GetEmployeeProjectsAsync(string userId)
-    {
-        var employeeId = await GetEmployeeIdByUserId(userId);
-        if (employeeId == null) 
-            return [];
-
-        return await employeeRepository.GetProjectsByEmployeeIdAsync(employeeId);
-    }
+    public async Task<List<Project>> GetEmployeeProjectsAsync(Guid employeeId)
+        => await projectRepository.GetProjectsByEmployeeIdAsync(employeeId);
 }

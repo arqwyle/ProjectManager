@@ -9,7 +9,9 @@ namespace ProjectManager.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ObjectivesController(IObjectiveService service) : ControllerBase
+public class ObjectivesController(
+    IObjectiveService objectiveService, 
+    IEmployeeService employeeService) : ControllerBase
 {
     private static ObjectiveDto MapToDto(Objective o)
     {
@@ -33,7 +35,7 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
         [FromQuery] string? sortBy = null,
         [FromQuery] bool isSortAscending = true)
     {
-        var objectives = await service.GetAllAsync(statuses, priorities, sortBy, isSortAscending);
+        var objectives = await objectiveService.GetAllAsync(statuses, priorities, sortBy, isSortAscending);
         return Ok(objectives.Select(MapToDto).ToList());
     }
     
@@ -41,7 +43,7 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ObjectiveDto>> GetById(Guid id)
     {
-        var objective = await service.GetByIdAsync(id);
+        var objective = await objectiveService.GetByIdAsync(id);
         if (objective == null)
             return NotFound();
 
@@ -59,7 +61,7 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
         
-        var employeeId = await service.GetEmployeeIdByUserId(userId);
+        var employeeId = await employeeService.GetEmployeeIdByUserIdAsync(userId);
         if (employeeId == null)
             return Forbid();
 
@@ -75,7 +77,7 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
             ProjectId = dto.ProjectId
         };
 
-        await service.AddAsync(objective);
+        await objectiveService.AddAsync(objective);
 
         return CreatedAtAction(nameof(GetById), new { id = objective.Id }, MapToDto(objective));
     }
@@ -84,7 +86,7 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, ObjectiveDto dto)
     {
-        var existing = await service.GetByIdAsync(id);
+        var existing = await objectiveService.GetByIdAsync(id);
         if (existing == null)
             return NotFound();
 
@@ -96,7 +98,7 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
         existing.Priority = dto.Priority;
         existing.ProjectId = dto.ProjectId;
 
-        await service.UpdateAsync(existing);
+        await objectiveService.UpdateAsync(existing);
         return NoContent();
     }
 
@@ -104,11 +106,11 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var existing = await service.GetByIdAsync(id);
+        var existing = await objectiveService.GetByIdAsync(id);
         if (existing == null)
             return NotFound();
 
-        await service.DeleteAsync(id);
+        await objectiveService.DeleteAsync(id);
         return NoContent();
     }
 
@@ -116,32 +118,68 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
     [HttpPost("{objectiveId:guid}/executor/{employeeId:guid}")]
     public async Task<IActionResult> AssignExecutor(Guid objectiveId, Guid employeeId)
     {
-        var objective = await service.GetByIdAsync(objectiveId);
+        var objective = await objectiveService.GetByIdAsync(objectiveId);
         if (objective == null)
             return NotFound("Objective not found");
+        
+        var employee = await employeeService.GetByIdAsync(employeeId);
+        if (employee == null)
+            return NotFound("Employee not found");
 
-        var isInProject = await service.IsEmployeeInObjectiveProjectAsync(objectiveId, employeeId);
+        var isInProject = await objectiveService.IsEmployeeInObjectiveProjectAsync(objectiveId, employeeId);
         if (!isInProject)
             return BadRequest("Employee is not assigned to the project");
 
         objective.ExecutorId = employeeId;
-        await service.UpdateAsync(objective);
+        await objectiveService.UpdateAsync(objective);
 
         return NoContent();
     }
 
     [Authorize(Policy = "RequireManagerOrAbove")]
     [HttpPut("{objectiveId:guid}/executor")]
-    public async Task<IActionResult> UpdateExecutor(Guid objectiveId, Guid  executorId)
+    public async Task<IActionResult> UpdateExecutor(Guid objectiveId, Guid employeeId)
     {
-        var objective = await service.GetByIdAsync(objectiveId);
+        var objective = await objectiveService.GetByIdAsync(objectiveId);
         if (objective == null)
-            return NotFound();
+            return NotFound("Objective not found");
+        
+        var employee = await employeeService.GetByIdAsync(employeeId);
+        if (employee == null)
+            return NotFound("Employee not found");
 
-        objective.ExecutorId = executorId;
-        await service.UpdateAsync(objective);
+        objective.ExecutorId = employeeId;
+        await objectiveService.UpdateAsync(objective);
 
         return NoContent();
+    }
+
+    [Authorize(Policy = "RequireEmployeeOrAbove")]
+    [HttpPatch("{objectiveId:guid}/update-status")]
+    public async Task<IActionResult> UpdateObjectiveStatus(Guid objectiveId, [FromBody] Status status)
+    {
+        var objective = await objectiveService.GetByIdAsync(objectiveId);
+        if (objective == null)
+            return NotFound("Objective not found");
+        
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return Forbid();
+
+        var employeeId = await employeeService.GetEmployeeIdByUserIdAsync(userId);
+        if (employeeId == null)
+            return Forbid();
+
+        var isDirector = User.IsInRole("director");
+
+        var success = await objectiveService.UpdateObjectiveStatusAsync(
+            objectiveId, 
+            status, 
+            employeeId.Value, 
+            isDirector
+        );
+
+        return success ? NoContent() : Forbid();
     }
 
     [Authorize(Policy = "RequireManagerOrAbove")]
@@ -151,27 +189,13 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId))
             return Forbid();
-
-        var objectives = await service.GetObjectivesForManagerProjectsAsync(userId);
-        return Ok(objectives.Select(MapToDto).ToList());
-    }
-
-    [Authorize(Policy = "RequireEmployeeOrAbove")]
-    [HttpPatch("{objectiveId:guid}/update-status")]
-    public async Task<IActionResult> UpdateObjectiveStatus(Guid objectiveId, [FromBody] Status status)
-    {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userId))
-            return Forbid();
         
-        var roles = User.Claims
-            .Where(c => c.Type == ClaimTypes.Role)
-            .Select(c => c.Value)
-            .ToList();
+        var employeeId = await employeeService.GetEmployeeIdByUserIdAsync(userId);
+        if (employeeId == null)
+            return Forbid();
 
-        var success = await service.UpdateObjectiveStatusAsync(objectiveId, status, userId, roles);
-
-        return success ? NoContent() : Forbid();
+        var objectives = await objectiveService.GetObjectivesForManagerProjectsAsync(employeeId.Value);
+        return Ok(objectives.Select(MapToDto).ToList());
     }
 
     [Authorize(Policy = "RequireEmployeeOrAbove")]
@@ -182,7 +206,11 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
         if (string.IsNullOrEmpty(userId))
             return Forbid();
         
-        var objectives = await service.GetEmployeeObjectivesAsync(userId);
+        var employeeId = await employeeService.GetEmployeeIdByUserIdAsync(userId);
+        if (employeeId == null)
+            return Forbid();
+        
+        var objectives = await objectiveService.GetEmployeeObjectivesAsync(employeeId.Value);
         return Ok(objectives.Select(MapToDto).ToList());
     }
 }

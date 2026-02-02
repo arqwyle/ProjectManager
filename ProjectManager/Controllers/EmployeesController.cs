@@ -83,8 +83,6 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
 
         await service.UpdateAsync(employee);
         
-        await service.UpdateProjectLinksAsync(employee.Id, dto.ProjectsIds);
-        
         return NoContent();
     }
     

@@ -6,7 +6,6 @@ namespace ProjectManager.Services;
 
 public class ObjectiveService(
     IObjectiveRepository objectiveRepository, 
-    IEmployeeRepository employeeRepository,
     IProjectRepository projectRepository) : IObjectiveService
 {
     public async Task<List<Objective>> GetAllAsync(
@@ -27,83 +26,46 @@ public class ObjectiveService(
 
     public async Task DeleteAsync(Guid id)
         => await objectiveRepository.DeleteAsync(id);
-    
+
+    public async Task<List<Objective>> GetEmployeeObjectivesAsync(Guid employeeId)
+        => await objectiveRepository.GetObjectivesByEmployeeIdAsync(employeeId);
+
+    public async Task<List<Objective>> GetObjectivesForManagerProjectsAsync(Guid employeeId)
+        => await objectiveRepository.GetObjectivesByDirectorIdAsync(employeeId);
+
     public async Task<bool> IsEmployeeInObjectiveProjectAsync(Guid objectiveId, Guid employeeId)
-        => await objectiveRepository.IsEmployeeInObjectiveProjectAsync(objectiveId, employeeId);
-
-    public async Task<Guid?> GetEmployeeIdByUserId(string userId)
-        => await employeeRepository.GetEmployeeIdByUserIdAsync(userId);
-
-    public async Task<List<Objective>> GetObjectivesForManagerProjectsAsync(string userId)
     {
-        var employeeId = await employeeRepository.GetEmployeeIdByUserIdAsync(userId);
-        if (employeeId == null)
-            return [];
+        var objective = await objectiveRepository.GetByIdAsync(objectiveId);
+        if (objective?.ProjectId == null) 
+            return false;
 
-        return await objectiveRepository.GetObjectivesByDirectorIdAsync(employeeId.Value);
+        var employeeProjectIds = await projectRepository.GetProjectIdsByEmployeeIdAsync(employeeId);
+        return employeeProjectIds.Contains(objective.ProjectId.Value);
     }
 
-    public async Task<bool> UpdateObjectiveStatusAsync(Guid objectiveId, Status status, string userId, List<string> roles)
+    public async Task<bool> UpdateObjectiveStatusAsync(Guid objectiveId, Status status, Guid employeeId, bool isDirector)
     {
-        if (roles.Contains("director"))
-            return await UpdateObjectiveIfAllowed(objectiveId, status, _ => Task.FromResult(true));
-
-        if (!roles.Contains("project manager") && !roles.Contains("employee"))
-            return false;
-
-        var employeeId = await GetEmployeeIdByUserId(userId);
-        if (employeeId == null)
-            return false;
-
-        if (roles.Contains("employee"))
-            return await UpdateObjectiveIfAllowed(
-                objectiveId,
-                status,
-                async id =>
-                {
-                    var objective = await objectiveRepository.GetObjectiveByIdAndAssigneeAsync(id, employeeId.Value);
-                    return objective != null;
-                }
-            );
-
-        if (roles.Contains("project manager"))
-            return await UpdateObjectiveIfAllowed(
-                objectiveId,
-                status,
-                async id =>
-                {
-                    var objective = await objectiveRepository.GetByIdAsync(id);
-                    if (objective?.ProjectId == null) 
-                        return false;
-
-                    var project = await projectRepository.GetByIdAsync((Guid)objective.ProjectId);
-                    return project?.DirectorId == employeeId.Value;
-                }
-            );
-
-        return false;
-    }
-
-    private async Task<bool> UpdateObjectiveIfAllowed(Guid objectiveId, Status status, Func<Guid, Task<bool>> canUpdate)
-    {
-        if (!await canUpdate(objectiveId))
-            return false;
-
         var objective = await objectiveRepository.GetByIdAsync(objectiveId);
         if (objective == null)
             return false;
 
-        objective.Status = status;
-        await objectiveRepository.UpdateObjectiveAsync(objective);
-        return true;
+        if (isDirector || objective.ExecutorId == employeeId)
+            return await ApplyStatusUpdate(objective, status);
+
+        if (!objective.ProjectId.HasValue) 
+            return false;
+        
+        var project = await projectRepository.GetByIdAsync(objective.ProjectId.Value);
+        if (project?.DirectorId == employeeId)
+            return await ApplyStatusUpdate(objective, status);
+
+        return false;
     }
 
-    public async Task<List<Objective>> GetEmployeeObjectivesAsync(string userId)
+    private async Task<bool> ApplyStatusUpdate(Objective objective, Status status)
     {
-        var employeeId = await GetEmployeeIdByUserId(userId);
-        if (employeeId == null) 
-            return [];
-
-        return await employeeRepository.GetObjectivesByEmployeeIdAsync(employeeId);
+        objective.Status = status;
+        await objectiveRepository.UpdateAsync(objective);
+        return true;
     }
 }

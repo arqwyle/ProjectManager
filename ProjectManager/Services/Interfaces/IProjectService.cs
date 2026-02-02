@@ -13,7 +13,7 @@ public interface IProjectService
         string? sortBy = null,
         bool isSortAscending = true);
     Task<Project?> GetByIdAsync(Guid id);
-    Task<Project> AddAsync(Project project);
+    Task AddAsync(Project project);
     Task UpdateAsync(Project project);
     Task DeleteAsync(Guid id);
     Task AddEmployeeToProjectAsync(Guid projectId, Guid employeeId);
@@ -21,7 +21,6 @@ public interface IProjectService
     Task RemoveEmployeeFromProjectAsync(Guid projectId, Guid employeeId);
     Task AddObjectiveToProjectAsync(Guid projectId, Guid objectiveId);
     Task RemoveObjectiveFromProjectAsync(Guid projectId, Guid objectiveId);
-    Task<Guid?> GetEmployeeIdByUserId(string userId);
-    Task<List<Project>> GetManagerProjectsAsync(string userName);
-    Task<List<Project>> GetEmployeeProjectsAsync(string userId);
+    Task<List<Project>> GetManagerProjectsAsync(Guid employeeId);
+    Task<List<Project>> GetEmployeeProjectsAsync(Guid employeeId);
 }

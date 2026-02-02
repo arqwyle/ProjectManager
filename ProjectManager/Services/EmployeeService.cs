@@ -21,6 +21,6 @@ public class EmployeeService(IEmployeeRepository repository) : IEmployeeService
     public async Task DeleteAsync(Guid id)
         => await repository.DeleteAsync(id);
     
-    public async Task UpdateProjectLinksAsync(Guid employeeId, List<Guid> projectIds)
-        => await repository.UpdateProjectLinksAsync(employeeId, projectIds);
+    public async Task<Guid?> GetEmployeeIdByUserIdAsync(string userId)
+        => await repository.GetEmployeeIdByUserIdAsync(userId);
 }

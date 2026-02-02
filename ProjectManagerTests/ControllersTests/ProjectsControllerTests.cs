@@ -9,48 +9,72 @@ using ProjectManager.Services.Interfaces;
 
 namespace ProjectManagerTests.ControllersTests;
 
-public class ProjectsControllerTests
+public class ProjectControllerTests
 {
-    private readonly Mock<IProjectService> _mockService;
+    private readonly Mock<IProjectService> _mockProjectService;
+    private readonly Mock<IEmployeeService> _mockEmployeeService;
+    private readonly Mock<IObjectiveService> _mockObjectiveService;
     private readonly ProjectsController _controller;
+    private readonly ClaimsPrincipal _directorUser;
+    private readonly ClaimsPrincipal _managerUser;
+    private readonly ClaimsPrincipal _employeeUser;
 
-    public ProjectsControllerTests()
+    public ProjectControllerTests()
     {
-        _mockService = new Mock<IProjectService>();
-        _controller = new ProjectsController(_mockService.Object);
+        _mockProjectService = new Mock<IProjectService>();
+        _mockEmployeeService = new Mock<IEmployeeService>();
+        _mockObjectiveService = new Mock<IObjectiveService>();
+
+        _directorUser = new ClaimsPrincipal(new ClaimsIdentity([
+            new Claim(ClaimTypes.NameIdentifier, "1"),
+            new Claim(ClaimTypes.Role, "director")
+        ], "test"));
+
+        _managerUser = new ClaimsPrincipal(new ClaimsIdentity([
+            new Claim(ClaimTypes.NameIdentifier, "2"),
+            new Claim(ClaimTypes.Role, "project manager")
+        ], "test"));
+
+        _employeeUser = new ClaimsPrincipal(new ClaimsIdentity([
+            new Claim(ClaimTypes.NameIdentifier, "3"),
+            new Claim(ClaimTypes.Role, "employee")
+        ], "test"));
+
+        _controller = new ProjectsController(
+            _mockProjectService.Object,
+            _mockEmployeeService.Object,
+            _mockObjectiveService.Object);
     }
 
     [Fact]
-    public async Task GetAll_ShouldReturnOkWithProjects()
+    public async Task GetAll_ShouldReturnOk_WhenAuthorized()
     {
         var projects = new List<Project>
         {
             new()
             {
-                Id = Guid.NewGuid(), 
-                Name = "1", 
-                CustomerName = "Test", 
-                ExecutorName = "Test", 
-                Priority = 1
-            },
-            new()
-            {
-                Id = Guid.NewGuid(), 
-                Name = "2", 
-                CustomerName = "Test", 
-                ExecutorName = "Test", 
-                Priority = 1
+                Id = Guid.NewGuid(),
+                Name = "Test",
+                CustomerName = "Test",
+                ExecutorName = "Test",
+                StartTime = DateTime.Now,
+                EndTime = DateTime.Now.AddDays(1),
+                Priority = 1,
+                DirectorId = Guid.NewGuid()
             }
         };
-        _mockService.Setup(s => s.GetAllAsync()).ReturnsAsync(projects);
+        _mockProjectService.Setup(s => s.GetAllAsync(null, null, null, null, null, null, true))
+            .ReturnsAsync(projects);
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = _directorUser }
+        };
 
         var result = await _controller.GetAll();
 
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var returnValue = Assert.IsType<List<ProjectDto>>(okResult.Value);
-        Assert.Equal(2, returnValue.Count);
-        Assert.Equal("1", returnValue[0].Name);
-        Assert.Equal("2", returnValue[1].Name);
+        Assert.Single(returnValue);
     }
 
     [Fact]
@@ -59,26 +83,37 @@ public class ProjectsControllerTests
         var id = Guid.NewGuid();
         var project = new Project
         {
-            Id = id, 
-            Name = "Test", 
-            CustomerName = "Test", 
-            ExecutorName = "Test", 
-            Priority = 1
+            Id = id,
+            Name = "Test",
+            CustomerName = "Test",
+            ExecutorName = "Test",
+            StartTime = DateTime.Now,
+            EndTime = DateTime.Now.AddDays(1),
+            Priority = 1,
+            DirectorId = Guid.NewGuid()
         };
-        _mockService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(project);
+        _mockProjectService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(project);
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = _directorUser }
+        };
 
         var result = await _controller.GetById(id);
 
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var returnValue = Assert.IsType<ProjectDto>(okResult.Value);
-        Assert.Equal(id, returnValue.Id);
+        var dto = Assert.IsType<ProjectDto>(okResult.Value);
+        Assert.Equal(id, dto.Id);
     }
 
     [Fact]
-    public async Task GetById_ShouldReturnNotFound_WhenProjectNotExists()
+    public async Task GetById_ShouldReturnNotFound_WhenProjectDoesNotExist()
     {
         var id = Guid.NewGuid();
-        _mockService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync((Project?)null);
+        _mockProjectService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync((Project?)null);
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = _directorUser }
+        };
 
         var result = await _controller.GetById(id);
 
@@ -86,186 +121,105 @@ public class ProjectsControllerTests
     }
 
     [Fact]
-    public async Task Create_ShouldReturnCreatedAtAction_WhenValid()
-    {
-        var dto = new ProjectCreateDto(
-            "Test Project",
-            "Customer",
-            "Executor",
-            DateTime.Now,
-            DateTime.Now.AddDays(1),
-            1,
-            Guid.NewGuid(),
-            [Guid.NewGuid()]
-        );
-        var project = new Project
-        {
-            Id = Guid.NewGuid(), 
-            Name = "Test", 
-            CustomerName = "Test", 
-            ExecutorName = "Test", 
-            Priority = 1
-        };
-        _mockService.Setup(s => s.AddAsync(It.IsAny<Project>())).ReturnsAsync(project);
-        _mockService.Setup(s => s.AddEmployeeToProjectAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
-                    .Returns(Task.CompletedTask);
-
-        var result = await _controller.Create(dto);
-
-        var createdAtResult = Assert.IsType<CreatedAtActionResult>(result.Result);
-        var returnValue = Assert.IsType<ProjectDto>(createdAtResult.Value);
-        Assert.Equal(project.Id, returnValue.Id);
-    }
-
-    [Fact]
-    public async Task Create_ShouldAddAllEmployeesFromDto()
+    public async Task Create_ShouldReturnCreatedAt_WhenValidAndAuthorized()
     {
         var empId1 = Guid.NewGuid();
         var empId2 = Guid.NewGuid();
-        var dto = new ProjectCreateDto(
-            "Test", "", "", DateTime.Now, DateTime.Now, 1, Guid.NewGuid(),
-            [empId1, empId2]
-        );
-        var project = new Project
+        var dto = new ProjectCreateDto("Test", "Test", "Test", DateTime.Now, DateTime.Now.AddDays(1), 1, Guid.NewGuid(),
+            [empId1, empId2]);
+        Project? capturedProject = null;
+
+        _mockProjectService.Setup(s => s.AddAsync(It.IsAny<Project>()))
+            .Callback<Project>(p => capturedProject = p)
+            .Returns(Task.CompletedTask);
+        _mockProjectService.Setup(s => s.AddEmployeeToProjectAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+            .Returns(Task.CompletedTask);
+
+        _controller.ControllerContext = new ControllerContext
         {
-            Id = Guid.NewGuid(), 
-            Name = "Test", 
-            CustomerName = "Test", 
-            ExecutorName = "Test", 
-            Priority = 1
+            HttpContext = new DefaultHttpContext { User = _directorUser }
         };
-        _mockService.Setup(s => s.AddAsync(It.IsAny<Project>())).ReturnsAsync(project);
-        _mockService.Setup(s => s.AddEmployeeToProjectAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
-                    .Returns(Task.CompletedTask);
 
-        await _controller.Create(dto);
+        var result = await _controller.Create(dto);
 
-        _mockService.Verify(s => s.AddEmployeeToProjectAsync(project.Id, empId1), Times.Once);
-        _mockService.Verify(s => s.AddEmployeeToProjectAsync(project.Id, empId2), Times.Once);
+        Assert.NotNull(capturedProject);
+
+        var createdAtResult = Assert.IsType<CreatedAtActionResult>(result.Result);
+        Assert.Equal(nameof(_controller.GetById), createdAtResult.ActionName);
+
+        var returnedDto = Assert.IsType<ProjectDto>(createdAtResult.Value);
+        Assert.Equal(capturedProject.Id, returnedDto.Id);
     }
 
     [Fact]
-    public async Task Create_ShouldHandleEmptyEmployeeList()
+    public async Task Create_ShouldReturnBadRequest_WhenModelStateIsInvalid()
     {
-        var dto = new ProjectCreateDto(
-            "Test", "", "", DateTime.Now, DateTime.Now, 1, Guid.NewGuid(),
-            []
-        );
-        var project = new Project
+        _controller.ControllerContext = new ControllerContext
         {
-            Id = Guid.NewGuid(), 
-            Name = "Test", 
-            CustomerName = "Test", 
-            ExecutorName = "Test", 
-            Priority = 1
+            HttpContext = new DefaultHttpContext { User = _directorUser }
         };
-        _mockService.Setup(s => s.AddAsync(It.IsAny<Project>())).ReturnsAsync(project);
+        _controller.ModelState.AddModelError("Name", "Required");
 
-        await _controller.Create(dto);
+        var dto = new ProjectCreateDto("", "Test", "Test", DateTime.Now, DateTime.Now.AddDays(1), 1, Guid.NewGuid(), []);
 
-        _mockService.Verify(s => s.AddEmployeeToProjectAsync(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never);
-    }
-    
-    [Fact]
-    public async Task AddEmployeeToProject_ShouldReturnNotFound_WhenProjectDoesNotExist()
-    {
-        var projectId = Guid.NewGuid();
-        var employeeId = Guid.NewGuid();
-        _mockService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync((Project)null!);
+        var result = await _controller.Create(dto);
 
-        var result = await _controller.AddEmployeeToProject(projectId, employeeId);
-
-        Assert.IsType<NotFoundObjectResult>(result);
-        var notFoundResult = result as NotFoundObjectResult;
-        Assert.Equal("Project not found", notFoundResult!.Value);
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        _mockProjectService.Verify(s => s.AddAsync(It.IsAny<Project>()), Times.Never);
     }
 
     [Fact]
-    public async Task AddEmployeeToProject_ShouldReturnNoContent_WhenProjectExists()
-    {
-        var projectId = Guid.NewGuid();
-        var employeeId = Guid.NewGuid();
-        var project = new Project
-        {
-            Id = projectId, 
-            Name = "Test", 
-            CustomerName = "Test", 
-            ExecutorName = "Test", 
-            Priority = 1
-        };
-        _mockService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync(project);
-        _mockService.Setup(s => s.AddEmployeeToProjectAsync(projectId, employeeId)).Returns(Task.CompletedTask);
-
-        var result = await _controller.AddEmployeeToProject(projectId, employeeId);
-
-        Assert.IsType<NoContentResult>(result);
-    }
-
-    [Fact]
-    public async Task RemoveEmployeeFromProject_ShouldReturnNotFound_WhenProjectDoesNotExist()
-    {
-        var projectId = Guid.NewGuid();
-        var employeeId = Guid.NewGuid();
-        _mockService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync((Project)null!);
-
-        var result = await _controller.RemoveEmployeeFromProject(projectId, employeeId);
-
-        Assert.IsType<NotFoundObjectResult>(result);
-        var notFoundResult = result as NotFoundObjectResult;
-        Assert.Equal("Project not found", notFoundResult!.Value);
-    }
-
-    [Fact]
-    public async Task RemoveEmployeeFromProject_ShouldReturnNoContent_WhenProjectExists()
-    {
-        var projectId = Guid.NewGuid();
-        var employeeId = Guid.NewGuid();
-        var project = new Project
-        {
-            Id = projectId, 
-            Name = "Test", 
-            CustomerName = "Test", 
-            ExecutorName = "Test", 
-            Priority = 1
-        };
-        _mockService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync(project);
-        _mockService.Setup(s => s.RemoveEmployeeFromProjectAsync(projectId, employeeId)).Returns(Task.CompletedTask);
-
-        var result = await _controller.RemoveEmployeeFromProject(projectId, employeeId);
-
-        Assert.IsType<NoContentResult>(result);
-    }
-
-    [Fact]
-    public async Task Update_ShouldReturnNoContent_WhenValid()
+    public async Task Update_ShouldReturnNoContent_WhenProjectExists()
     {
         var id = Guid.NewGuid();
-        var dto = new ProjectDto(id, "Updated", "", "", DateTime.Now, DateTime.Now, 1, Guid.NewGuid(), [], []);
-        var existingProject = new Project
+        var empIds = new List<Guid> { Guid.NewGuid(), Guid.NewGuid() };
+        var dto = new ProjectDto(id, "Test", "Test", "Test", DateTime.Now, DateTime.Now.AddDays(1), 1, Guid.NewGuid(), empIds, []);
+        var existing = new Project
         {
-            Id = id, 
-            Name = "Test", 
-            CustomerName = "Test", 
-            ExecutorName = "Test", 
-            Priority = 1
+            Id = id,
+            Name = "Old",
+            CustomerName = "Old",
+            ExecutorName = "Old",
+            StartTime = DateTime.Now.AddDays(-1),
+            EndTime = DateTime.Now,
+            Priority = 999,
+            DirectorId = Guid.NewGuid()
         };
-        _mockService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(existingProject);
-        _mockService.Setup(s => s.UpdateAsync(It.IsAny<Project>())).Returns(Task.CompletedTask);
-        _mockService.Setup(s => s.UpdateEmployeeLinksAsync(id, It.IsAny<List<Guid>>())).Returns(Task.CompletedTask);
+
+        _mockProjectService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(existing);
+        _mockProjectService.Setup(s => s.UpdateAsync(It.IsAny<Project>())).Returns(Task.CompletedTask);
+        _mockProjectService.Setup(s => s.UpdateEmployeeLinksAsync(id, It.IsAny<List<Guid>>())).Returns(Task.CompletedTask);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = _directorUser }
+        };
 
         var result = await _controller.Update(id, dto);
 
         Assert.IsType<NoContentResult>(result);
-        _mockService.Verify(s => s.UpdateAsync(It.IsAny<Project>()), Times.Once);
-        _mockService.Verify(s => s.UpdateEmployeeLinksAsync(id, dto.EmployeeIds), Times.Once);
+        Assert.Equal(dto.Name, existing.Name);
+        Assert.Equal(dto.CustomerName, existing.CustomerName);
+        Assert.Equal(dto.ExecutorName, existing.ExecutorName);
+        Assert.Equal(dto.StartTime, existing.StartTime);
+        Assert.Equal(dto.EndTime, existing.EndTime);
+        Assert.Equal(dto.Priority, existing.Priority);
+        Assert.Equal(dto.DirectorId, existing.DirectorId);
+
+        _mockProjectService.Verify(s => s.UpdateEmployeeLinksAsync(id, empIds), Times.Once);
     }
 
     [Fact]
-    public async Task Update_ShouldReturnNotFound_WhenProjectNotExists()
+    public async Task Update_ShouldReturnNotFound_WhenProjectDoesNotExist()
     {
         var id = Guid.NewGuid();
-        var dto = new ProjectDto(id, "Test", "", "", DateTime.Now, DateTime.Now, 1, Guid.NewGuid(), [], []);
-        _mockService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync((Project?)null);
+        var dto = new ProjectDto(id, "Test", "Test", "Test", DateTime.Now, DateTime.Now.AddDays(1), 1, Guid.NewGuid(), [], []);
+        _mockProjectService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync((Project?)null);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = _directorUser }
+        };
 
         var result = await _controller.Update(id, dto);
 
@@ -276,63 +230,293 @@ public class ProjectsControllerTests
     public async Task Delete_ShouldReturnNoContent_WhenProjectExists()
     {
         var id = Guid.NewGuid();
-        var existingProject = new Project
+        var project = new Project
         {
-            Id = id, 
-            Name = "Test", 
-            CustomerName = "Test", 
-            ExecutorName = "Test", 
-            Priority = 1
+            Id = id,
+            Name = "Test",
+            CustomerName = "Test",
+            ExecutorName = "Test",
+            StartTime = DateTime.Now,
+            EndTime = DateTime.Now.AddDays(1),
+            Priority = 1,
+            DirectorId = Guid.NewGuid()
         };
-        _mockService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(existingProject);
-        _mockService.Setup(s => s.DeleteAsync(id)).Returns(Task.CompletedTask);
+        _mockProjectService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(project);
+        _mockProjectService.Setup(s => s.DeleteAsync(id)).Returns(Task.CompletedTask);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = _directorUser }
+        };
 
         var result = await _controller.Delete(id);
 
         Assert.IsType<NoContentResult>(result);
-        _mockService.Verify(s => s.DeleteAsync(id), Times.Once);
+        _mockProjectService.Verify(s => s.DeleteAsync(id), Times.Once);
     }
 
     [Fact]
-    public async Task Delete_ShouldReturnNotFound_WhenProjectNotExists()
+    public async Task Delete_ShouldReturnNotFound_WhenProjectDoesNotExist()
     {
         var id = Guid.NewGuid();
-        _mockService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync((Project?)null);
+        _mockProjectService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync((Project?)null);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = _directorUser }
+        };
 
         var result = await _controller.Delete(id);
 
         Assert.IsType<NotFoundResult>(result);
     }
-    
+
     [Fact]
-    public async Task AddObjectiveToProject_ShouldReturnNotFound_WhenProjectDoesNotExist()
+    public async Task UploadDocuments_ShouldReturnBadRequest_WhenNoFiles()
     {
         var projectId = Guid.NewGuid();
-        var objectiveId = Guid.NewGuid();
-        _mockService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync((Project)null!);
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = _managerUser }
+        };
 
-        var result = await _controller.AddObjectiveToProject(projectId, objectiveId);
+        var result = await _controller.UploadDocuments(projectId, null);
 
-        Assert.IsType<NotFoundObjectResult>(result);
-        var notFoundResult = result as NotFoundObjectResult;
-        Assert.Equal("Project not found", notFoundResult!.Value);
+        Assert.IsType<BadRequestObjectResult>(result);
+        var badRequest = (BadRequestObjectResult)result;
+        Assert.Equal("No files uploaded", badRequest.Value);
     }
 
     [Fact]
-    public async Task AddObjectiveToProject_ShouldReturnNoContent_WhenProjectExists()
+    public async Task UploadDocuments_ShouldReturnNotFound_WhenProjectNotFound()
+    {
+        var projectId = Guid.NewGuid();
+        var files = new List<IFormFile>();
+        var fileMock = new Mock<IFormFile>();
+        fileMock.Setup(f => f.Length).Returns(1L);
+        fileMock.Setup(f => f.FileName).Returns("test.txt");
+        files.Add(fileMock.Object);
+
+        _mockProjectService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync((Project?)null);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = _managerUser }
+        };
+
+        var result = await _controller.UploadDocuments(projectId, files);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+        var notFound = (NotFoundObjectResult)result;
+        Assert.Equal("Project not found", notFound.Value);
+    }
+
+    [Fact]
+    public async Task AddEmployeeToProject_ShouldReturnNoContent_WhenValid()
+    {
+        var projectId = Guid.NewGuid();
+        var employeeId = Guid.NewGuid();
+        var project = new Project
+        {
+            Id = projectId,
+            Name = "Test",
+            CustomerName = "Test",
+            ExecutorName = "Test",
+            StartTime = DateTime.Now,
+            EndTime = DateTime.Now.AddDays(1),
+            Priority = 1,
+            DirectorId = Guid.NewGuid()
+        };
+        var employee = new Employee
+        {
+            Id = employeeId,
+            FirstName = "Test",
+            LastName = "Test",
+            Patronymic = "Test",
+            Mail = "Test"
+        };
+
+        _mockProjectService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync(project);
+        _mockEmployeeService.Setup(s => s.GetByIdAsync(employeeId)).ReturnsAsync(employee);
+        _mockProjectService.Setup(s => s.AddEmployeeToProjectAsync(projectId, employeeId)).Returns(Task.CompletedTask);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = _managerUser }
+        };
+
+        var result = await _controller.AddEmployeeToProject(projectId, employeeId);
+
+        Assert.IsType<NoContentResult>(result);
+    }
+
+    [Fact]
+    public async Task AddEmployeeToProject_ShouldReturnNotFound_WhenProjectNotFound()
+    {
+        var projectId = Guid.NewGuid();
+        var employeeId = Guid.NewGuid();
+        _mockProjectService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync((Project?)null);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = _managerUser }
+        };
+
+        var result = await _controller.AddEmployeeToProject(projectId, employeeId);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+        var notFound = (NotFoundObjectResult)result;
+        Assert.Equal("Project not found", notFound.Value);
+    }
+
+    [Fact]
+    public async Task AddEmployeeToProject_ShouldReturnNotFound_WhenEmployeeNotFound()
+    {
+        var projectId = Guid.NewGuid();
+        var employeeId = Guid.NewGuid();
+        var project = new Project
+        {
+            Id = projectId,
+            Name = "Test",
+            CustomerName = "Test",
+            ExecutorName = "Test",
+            StartTime = DateTime.Now,
+            EndTime = DateTime.Now.AddDays(1),
+            Priority = 1,
+            DirectorId = Guid.NewGuid()
+        };
+
+        _mockProjectService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync(project);
+        _mockEmployeeService.Setup(s => s.GetByIdAsync(employeeId)).ReturnsAsync((Employee?)null);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = _managerUser }
+        };
+
+        var result = await _controller.AddEmployeeToProject(projectId, employeeId);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+        var notFound = (NotFoundObjectResult)result;
+        Assert.Equal("Employee not found", notFound.Value);
+    }
+
+    [Fact]
+    public async Task RemoveEmployeeFromProject_ShouldReturnNoContent_WhenValid()
+    {
+        var projectId = Guid.NewGuid();
+        var employeeId = Guid.NewGuid();
+        var project = new Project
+        {
+            Id = projectId,
+            Name = "Test",
+            CustomerName = "Test",
+            ExecutorName = "Test",
+            StartTime = DateTime.Now,
+            EndTime = DateTime.Now.AddDays(1),
+            Priority = 1,
+            DirectorId = Guid.NewGuid()
+        };
+        var employee = new Employee
+        {
+            Id = employeeId,
+            FirstName = "Test",
+            LastName = "Test",
+            Patronymic = "Test",
+            Mail = "Test"
+        };
+
+        _mockProjectService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync(project);
+        _mockEmployeeService.Setup(s => s.GetByIdAsync(employeeId)).ReturnsAsync(employee);
+        _mockProjectService.Setup(s => s.RemoveEmployeeFromProjectAsync(projectId, employeeId)).Returns(Task.CompletedTask);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = _managerUser }
+        };
+
+        var result = await _controller.RemoveEmployeeFromProject(projectId, employeeId);
+
+        Assert.IsType<NoContentResult>(result);
+    }
+
+    [Fact]
+    public async Task RemoveEmployeeFromProject_ShouldReturnNotFound_WhenProjectNotFound()
+    {
+        var projectId = Guid.NewGuid();
+        var employeeId = Guid.NewGuid();
+        _mockProjectService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync((Project?)null);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = _managerUser }
+        };
+
+        var result = await _controller.RemoveEmployeeFromProject(projectId, employeeId);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+        var notFound = (NotFoundObjectResult)result;
+        Assert.Equal("Project not found", notFound.Value);
+    }
+
+    [Fact]
+    public async Task RemoveEmployeeFromProject_ShouldReturnNotFound_WhenEmployeeNotFound()
+    {
+        var projectId = Guid.NewGuid();
+        var employeeId = Guid.NewGuid();
+        var project = new Project
+        {
+            Id = projectId,
+            Name = "Test",
+            CustomerName = "Test",
+            ExecutorName = "Test",
+            StartTime = DateTime.Now,
+            EndTime = DateTime.Now.AddDays(1),
+            Priority = 1,
+            DirectorId = Guid.NewGuid()
+        };
+
+        _mockProjectService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync(project);
+        _mockEmployeeService.Setup(s => s.GetByIdAsync(employeeId)).ReturnsAsync((Employee?)null);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = _managerUser }
+        };
+
+        var result = await _controller.RemoveEmployeeFromProject(projectId, employeeId);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+        var notFound = (NotFoundObjectResult)result;
+        Assert.Equal("Employee not found", notFound.Value);
+    }
+
+    [Fact]
+    public async Task AddObjectiveToProject_ShouldReturnNoContent_WhenValid()
     {
         var projectId = Guid.NewGuid();
         var objectiveId = Guid.NewGuid();
         var project = new Project
         {
-            Id = projectId, 
-            Name = "Test", 
-            CustomerName = "Test", 
-            ExecutorName = "Test", 
-            Priority = 1
+            Id = projectId,
+            Name = "Test",
+            CustomerName = "Test",
+            ExecutorName = "Test",
+            StartTime = DateTime.Now,
+            EndTime = DateTime.Now.AddDays(1),
+            Priority = 1,
+            DirectorId = Guid.NewGuid()
         };
-        _mockService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync(project);
-        _mockService.Setup(s => s.AddObjectiveToProjectAsync(projectId, objectiveId)).Returns(Task.CompletedTask);
+        var objective = new Objective { Id = objectiveId, Name = "Test", Priority = 1 };
+
+        _mockProjectService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync(project);
+        _mockObjectiveService.Setup(s => s.GetByIdAsync(objectiveId)).ReturnsAsync(objective);
+        _mockProjectService.Setup(s => s.AddObjectiveToProjectAsync(projectId, objectiveId)).Returns(Task.CompletedTask);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = _managerUser }
+        };
 
         var result = await _controller.AddObjectiveToProject(projectId, objectiveId);
 
@@ -340,123 +524,216 @@ public class ProjectsControllerTests
     }
 
     [Fact]
-    public async Task RemoveObjectiveFromProject_ShouldReturnNotFound_WhenProjectDoesNotExist()
+    public async Task AddObjectiveToProject_ShouldReturnNotFound_WhenProjectNotFound()
     {
         var projectId = Guid.NewGuid();
         var objectiveId = Guid.NewGuid();
-        _mockService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync((Project)null!);
+        _mockProjectService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync((Project?)null);
 
-        var result = await _controller.RemoveObjectiveFromProject(projectId, objectiveId);
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = _managerUser }
+        };
+
+        var result = await _controller.AddObjectiveToProject(projectId, objectiveId);
 
         Assert.IsType<NotFoundObjectResult>(result);
-        var notFoundResult = result as NotFoundObjectResult;
-        Assert.Equal("Project not found", notFoundResult!.Value);
+        var notFound = (NotFoundObjectResult)result;
+        Assert.Equal("Project not found", notFound.Value);
     }
 
     [Fact]
-    public async Task RemoveObjectiveFromProject_ShouldReturnNoContent_WhenProjectExists()
+    public async Task AddObjectiveToProject_ShouldReturnNotFound_WhenObjectiveNotFound()
     {
         var projectId = Guid.NewGuid();
         var objectiveId = Guid.NewGuid();
         var project = new Project
         {
-            Id = projectId, 
-            Name = "Test", 
-            CustomerName = "Test", 
-            ExecutorName = "Test", 
-            Priority = 1
+            Id = projectId,
+            Name = "Test",
+            CustomerName = "Test",
+            ExecutorName = "Test",
+            StartTime = DateTime.Now,
+            EndTime = DateTime.Now.AddDays(1),
+            Priority = 1,
+            DirectorId = Guid.NewGuid()
         };
-        _mockService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync(project);
-        _mockService.Setup(s => s.RemoveObjectiveFromProjectAsync(projectId, objectiveId)).Returns(Task.CompletedTask);
+
+        _mockProjectService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync(project);
+        _mockObjectiveService.Setup(s => s.GetByIdAsync(objectiveId)).ReturnsAsync((Objective?)null);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = _managerUser }
+        };
+
+        var result = await _controller.AddObjectiveToProject(projectId, objectiveId);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+        var notFound = (NotFoundObjectResult)result;
+        Assert.Equal("Objective not found", notFound.Value);
+    }
+
+    [Fact]
+    public async Task RemoveObjectiveFromProject_ShouldReturnNoContent_WhenValid()
+    {
+        var projectId = Guid.NewGuid();
+        var objectiveId = Guid.NewGuid();
+        var project = new Project
+        {
+            Id = projectId,
+            Name = "Test",
+            CustomerName = "Test",
+            ExecutorName = "Test",
+            StartTime = DateTime.Now,
+            EndTime = DateTime.Now.AddDays(1),
+            Priority = 1,
+            DirectorId = Guid.NewGuid()
+        };
+        var objective = new Objective { Id = objectiveId, Name = "Test", Priority = 1 };
+
+        _mockProjectService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync(project);
+        _mockObjectiveService.Setup(s => s.GetByIdAsync(objectiveId)).ReturnsAsync(objective);
+        _mockProjectService.Setup(s => s.RemoveObjectiveFromProjectAsync(projectId, objectiveId)).Returns(Task.CompletedTask);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = _managerUser }
+        };
 
         var result = await _controller.RemoveObjectiveFromProject(projectId, objectiveId);
 
         Assert.IsType<NoContentResult>(result);
     }
-    
+
     [Fact]
-    public async Task GetMyProjects_ShouldReturnForbid_WhenUserIdentityIsNull()
+    public async Task RemoveObjectiveFromProject_ShouldReturnNotFound_WhenProjectNotFound()
     {
+        var projectId = Guid.NewGuid();
+        var objectiveId = Guid.NewGuid();
+        _mockProjectService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync((Project?)null);
+
         _controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal() }
+            HttpContext = new DefaultHttpContext { User = _managerUser }
         };
 
-        var result = await _controller.GetMyProjects();
+        var result = await _controller.RemoveObjectiveFromProject(projectId, objectiveId);
 
-        Assert.IsType<ForbidResult>(result);
+        Assert.IsType<NotFoundObjectResult>(result);
+        var notFound = (NotFoundObjectResult)result;
+        Assert.Equal("Project not found", notFound.Value);
     }
 
     [Fact]
-    public async Task GetMyProjects_ShouldReturnForbid_WhenUserNameIsNullOrEmpty()
+    public async Task RemoveObjectiveFromProject_ShouldReturnNotFound_WhenObjectiveNotFound()
     {
-        var claimsIdentity = new ClaimsIdentity();
-        claimsIdentity.AddClaim(new Claim(ClaimTypes.Name, ""));
-        _controller.ControllerContext = new ControllerContext
+        var projectId = Guid.NewGuid();
+        var objectiveId = Guid.NewGuid();
+        var project = new Project
         {
-            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(claimsIdentity) }
+            Id = projectId,
+            Name = "Test",
+            CustomerName = "Test",
+            ExecutorName = "Test",
+            StartTime = DateTime.Now,
+            EndTime = DateTime.Now.AddDays(1),
+            Priority = 1,
+            DirectorId = Guid.NewGuid()
         };
 
-        var result = await _controller.GetMyProjects();
+        _mockProjectService.Setup(s => s.GetByIdAsync(projectId)).ReturnsAsync(project);
+        _mockObjectiveService.Setup(s => s.GetByIdAsync(objectiveId)).ReturnsAsync((Objective?)null);
 
-        Assert.IsType<ForbidResult>(result);
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = _managerUser }
+        };
+
+        var result = await _controller.RemoveObjectiveFromProject(projectId, objectiveId);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+        var notFound = (NotFoundObjectResult)result;
+        Assert.Equal("Objective not found", notFound.Value);
     }
 
     [Fact]
-    public async Task GetMyProjects_ShouldReturnOkWithProjects_WhenValidUser()
+    public async Task GetMyProjects_ShouldReturnOk_WhenAuthorized()
     {
-        var userId = "manager";
+        var userId = "2";
+        var employeeId = Guid.NewGuid();
         var projects = new List<Project>
         {
             new()
             {
-                Id = Guid.NewGuid(), 
-                Name = "Test", 
-                CustomerName = "Test", 
-                ExecutorName = "Test", 
-                Priority = 1
+                Id = Guid.NewGuid(),
+                Name = "Test",
+                CustomerName = "Test",
+                ExecutorName = "Test",
+                StartTime = DateTime.Now,
+                EndTime = DateTime.Now.AddDays(1),
+                Priority = 1,
+                DirectorId = employeeId
             }
         };
 
-        _mockService.Setup(s => s.GetManagerProjectsAsync(userId)).ReturnsAsync(projects);
+        _mockEmployeeService.Setup(s => s.GetEmployeeIdByUserIdAsync(userId)).ReturnsAsync(employeeId);
+        _mockProjectService.Setup(s => s.GetManagerProjectsAsync(employeeId)).ReturnsAsync(projects);
 
         _controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new DefaultHttpContext
-            {
-                User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, userId)]))
-            }
+            HttpContext = new DefaultHttpContext { User = _managerUser }
         };
 
         var result = await _controller.GetMyProjects();
 
         var okResult = Assert.IsType<OkObjectResult>(result);
         var returnValue = Assert.IsType<List<ProjectDto>>(okResult.Value);
-        Assert.Equal(projects[0].Id, returnValue[0].Id);
+        Assert.Single(returnValue);
     }
-    
+
     [Fact]
-    public async Task GetAssignedProjects_ShouldReturnOkWithProjects()
+    public async Task GetMyProjects_ShouldReturnForbid_WhenEmployeeNotFound()
     {
-        var userId = "testUser";
+        var userId = "2";
+        _mockEmployeeService.Setup(s => s.GetEmployeeIdByUserIdAsync(userId)).ReturnsAsync((Guid?)null);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = _managerUser }
+        };
+
+        var result = await _controller.GetMyProjects();
+
+        Assert.IsType<ForbidResult>(result);
+    }
+
+    [Fact]
+    public async Task GetAssignedProjects_ShouldReturnOk_WhenAuthorized()
+    {
+        var userId = "3";
+        var employeeId = Guid.NewGuid();
         var projects = new List<Project>
         {
             new()
             {
-                Id = Guid.NewGuid(), 
-                Name = "Test", 
-                CustomerName = "Test", 
-                ExecutorName = "Test", 
-                Priority = 1
+                Id = Guid.NewGuid(),
+                Name = "Test",
+                CustomerName = "Test",
+                ExecutorName = "Test",
+                StartTime = DateTime.Now,
+                EndTime = DateTime.Now.AddDays(1),
+                Priority = 1,
+                DirectorId = Guid.NewGuid()
             }
         };
-    
-        _mockService.Setup(s => s.GetEmployeeProjectsAsync(userId)).ReturnsAsync(projects);
+
+        _mockEmployeeService.Setup(s => s.GetEmployeeIdByUserIdAsync(userId)).ReturnsAsync(employeeId);
+        _mockProjectService.Setup(s => s.GetEmployeeProjectsAsync(employeeId)).ReturnsAsync(projects);
 
         _controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, userId)
-            ])) }
+            HttpContext = new DefaultHttpContext { User = _employeeUser }
         };
 
         var result = await _controller.GetAssignedProjects();
@@ -464,6 +741,21 @@ public class ProjectsControllerTests
         var okResult = Assert.IsType<OkObjectResult>(result);
         var returnValue = Assert.IsType<List<ProjectDto>>(okResult.Value);
         Assert.Single(returnValue);
-        Assert.Equal("Test", returnValue[0].Name);
+    }
+
+    [Fact]
+    public async Task GetAssignedProjects_ShouldReturnForbid_WhenEmployeeNotFound()
+    {
+        var userId = "3";
+        _mockEmployeeService.Setup(s => s.GetEmployeeIdByUserIdAsync(userId)).ReturnsAsync((Guid?)null);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = _employeeUser }
+        };
+
+        var result = await _controller.GetAssignedProjects();
+
+        Assert.IsType<ForbidResult>(result);
     }
 }

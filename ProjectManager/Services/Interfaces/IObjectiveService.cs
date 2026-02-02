@@ -13,9 +13,8 @@ public interface IObjectiveService
     Task AddAsync(Objective objective);
     Task UpdateAsync(Objective objective);
     Task DeleteAsync(Guid id);
+    Task<List<Objective>> GetEmployeeObjectivesAsync(Guid employeeId);
+    Task<List<Objective>> GetObjectivesForManagerProjectsAsync(Guid employeeId);
     Task<bool> IsEmployeeInObjectiveProjectAsync(Guid objectiveId, Guid employeeId);
-    Task<Guid?> GetEmployeeIdByUserId(string userId);
-    Task<List<Objective>> GetObjectivesForManagerProjectsAsync(string userName);
-    Task<bool> UpdateObjectiveStatusAsync(Guid objectiveId, Status status, string userName, List<string> roles);
-    Task<List<Objective>> GetEmployeeObjectivesAsync(string userId);
+    Task<bool> UpdateObjectiveStatusAsync(Guid objectiveId, Status status, Guid employeeId, bool isDirector);
 }

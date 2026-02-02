@@ -9,7 +9,10 @@ namespace ProjectManager.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ProjectsController(IProjectService service) : ControllerBase
+public class ProjectsController(
+    IProjectService projectService, 
+    IEmployeeService employeeService, 
+    IObjectiveService objectiveService) : ControllerBase
 {
     private static ProjectDto MapToDto(Project p)
     {
@@ -41,7 +44,7 @@ public class ProjectsController(IProjectService service) : ControllerBase
         [FromQuery] string? sortBy = null,
         [FromQuery] bool isSortAscending = true)
     {
-        var projects = await service.GetAllAsync(customerName, executorName, startTimeFrom, startTimeTo, priorities, sortBy, isSortAscending);
+        var projects = await projectService.GetAllAsync(customerName, executorName, startTimeFrom, startTimeTo, priorities, sortBy, isSortAscending);
         return Ok(projects.Select(MapToDto).ToList());
     }
     
@@ -49,7 +52,7 @@ public class ProjectsController(IProjectService service) : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ProjectDto>> GetById(Guid id)
     {
-        var project = await service.GetByIdAsync(id);
+        var project = await projectService.GetByIdAsync(id);
         return project == null ? NotFound() : Ok(MapToDto(project));
     }
     
@@ -72,19 +75,19 @@ public class ProjectsController(IProjectService service) : ControllerBase
             DirectorId = dto.DirectorId
         };
 
-        var created = await service.AddAsync(project);
+        await projectService.AddAsync(project);
 
         foreach (var empId in dto.EmployeeIds)
-            await service.AddEmployeeToProjectAsync(created.Id, empId);
+            await projectService.AddEmployeeToProjectAsync(project.Id, empId);
 
-        return CreatedAtAction(nameof(GetById), new { id = created.Id }, MapToDto(created));
+        return CreatedAtAction(nameof(GetById), new { id = project.Id }, MapToDto(project));
     }
 
     [Authorize(Roles = "director")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, ProjectDto dto)
     {
-        var project = await service.GetByIdAsync(id);
+        var project = await projectService.GetByIdAsync(id);
         if (project == null)
             return NotFound();
 
@@ -96,9 +99,9 @@ public class ProjectsController(IProjectService service) : ControllerBase
         project.Priority = dto.Priority;
         project.DirectorId = dto.DirectorId;
 
-        await service.UpdateAsync(project);
+        await projectService.UpdateAsync(project);
         
-        await service.UpdateEmployeeLinksAsync(project.Id, dto.EmployeeIds);
+        await projectService.UpdateEmployeeLinksAsync(project.Id, dto.EmployeeIds);
 
         return NoContent();
     }
@@ -107,11 +110,11 @@ public class ProjectsController(IProjectService service) : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var project = await service.GetByIdAsync(id);
+        var project = await projectService.GetByIdAsync(id);
         if (project == null)
             return NotFound();
 
-        await service.DeleteAsync(id);
+        await projectService.DeleteAsync(id);
         return NoContent();
     }
 
@@ -122,7 +125,7 @@ public class ProjectsController(IProjectService service) : ControllerBase
         if (files == null || files.Count == 0)
             return BadRequest("No files uploaded");
 
-        var project = await service.GetByIdAsync(projectId);
+        var project = await projectService.GetByIdAsync(projectId);
         if (project == null)
             return NotFound("Project not found");
 
@@ -144,11 +147,15 @@ public class ProjectsController(IProjectService service) : ControllerBase
     [HttpPost("{projectId:guid}/employees/{employeeId:guid}")]
     public async Task<IActionResult> AddEmployeeToProject(Guid projectId, Guid employeeId)
     {
-        var project = await service.GetByIdAsync(projectId);
+        var project = await projectService.GetByIdAsync(projectId);
         if (project == null)
             return NotFound("Project not found");
+        
+        var employee = await employeeService.GetByIdAsync(employeeId);
+        if (employee == null)
+            return NotFound("Employee not found");
 
-        await service.AddEmployeeToProjectAsync(projectId, employeeId);
+        await projectService.AddEmployeeToProjectAsync(projectId, employeeId);
         return NoContent();
     }
 
@@ -156,11 +163,15 @@ public class ProjectsController(IProjectService service) : ControllerBase
     [HttpDelete("{projectId:guid}/employees/{employeeId:guid}")]
     public async Task<IActionResult> RemoveEmployeeFromProject(Guid projectId, Guid employeeId)
     {
-        var project = await service.GetByIdAsync(projectId);
+        var project = await projectService.GetByIdAsync(projectId);
         if (project == null)
             return NotFound("Project not found");
+        
+        var employee = await employeeService.GetByIdAsync(employeeId);
+        if (employee == null)
+            return NotFound("Employee not found");
 
-        await service.RemoveEmployeeFromProjectAsync(projectId, employeeId);
+        await projectService.RemoveEmployeeFromProjectAsync(projectId, employeeId);
         return NoContent();
     }
 
@@ -168,11 +179,15 @@ public class ProjectsController(IProjectService service) : ControllerBase
     [HttpPost("{projectId:guid}/objectives/{objectiveId:guid}")]
     public async Task<IActionResult> AddObjectiveToProject(Guid projectId, Guid objectiveId)
     {
-        var project = await service.GetByIdAsync(projectId);
+        var project = await projectService.GetByIdAsync(projectId);
         if (project == null)
             return NotFound("Project not found");
+        
+        var objective = await objectiveService.GetByIdAsync(objectiveId);
+        if (objective == null)
+            return NotFound("Objective not found");
 
-        await service.AddObjectiveToProjectAsync(projectId, objectiveId);
+        await projectService.AddObjectiveToProjectAsync(projectId, objectiveId);
         return NoContent();
     }
     
@@ -180,11 +195,15 @@ public class ProjectsController(IProjectService service) : ControllerBase
     [HttpDelete("{projectId:guid}/objectives/{objectiveId:guid}")]
     public async Task<IActionResult> RemoveObjectiveFromProject(Guid projectId, Guid objectiveId)
     {
-        var project = await service.GetByIdAsync(projectId);
+        var project = await projectService.GetByIdAsync(projectId);
         if (project == null)
             return NotFound("Project not found");
+        
+        var objective = await objectiveService.GetByIdAsync(objectiveId);
+        if (objective == null)
+            return NotFound("Objective not found");
 
-        await service.RemoveObjectiveFromProjectAsync(projectId, objectiveId);
+        await projectService.RemoveObjectiveFromProjectAsync(projectId, objectiveId);
         return NoContent();
     }
     
@@ -195,8 +214,12 @@ public class ProjectsController(IProjectService service) : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId))
             return Forbid();
+        
+        var employeeId = await employeeService.GetEmployeeIdByUserIdAsync(userId);
+        if (employeeId == null)
+            return Forbid();
 
-        var projects = await service.GetManagerProjectsAsync(userId);
+        var projects = await projectService.GetManagerProjectsAsync(employeeId.Value);
         return Ok(projects.Select(MapToDto).ToList());
     }
     
@@ -208,7 +231,11 @@ public class ProjectsController(IProjectService service) : ControllerBase
         if (string.IsNullOrEmpty(userId))
             return Forbid();
         
-        var projects = await service.GetEmployeeProjectsAsync(userId);
+        var employeeId = await employeeService.GetEmployeeIdByUserIdAsync(userId);
+        if (employeeId == null)
+            return Forbid();
+        
+        var projects = await projectService.GetEmployeeProjectsAsync(employeeId.Value);
         return Ok(projects.Select(MapToDto).ToList());
     }
 }
