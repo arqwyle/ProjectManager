@@ -11,5 +11,6 @@ public record ProjectDto(
     [Required] DateTime EndTime,
     [Required] int Priority,
     [Required] Guid DirectorId,
-    [Required] List<Guid> EmployeeIds
+    List<Guid> EmployeeIds,
+    List<Guid> ObjectivesIds
 );

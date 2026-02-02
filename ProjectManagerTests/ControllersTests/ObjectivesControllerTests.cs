@@ -83,42 +83,60 @@ public class ObjectivesControllerTests
     }
 
     [Fact]
-    public async Task Create_ShouldReturnBadRequest_WhenModelStateInvalid()
+public async Task Create_ShouldReturnBadRequest_WhenModelStateInvalid()
+{
+    var user = new ClaimsPrincipal(new ClaimsIdentity([
+        new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString())
+    ], "test"));
+    _controller.ControllerContext = new ControllerContext
     {
-        _controller.ModelState.AddModelError("Name", "Required");
+        HttpContext = new DefaultHttpContext { User = user }
+    };
 
-        var dto = new ObjectiveCreateDto("Test", Guid.NewGuid(), Guid.NewGuid(), Status.ToDo, "Test", 1, Guid.NewGuid());
+    _controller.ModelState.AddModelError("Name", "Required");
+    var dto = new ObjectiveCreateDto("Test", Guid.NewGuid(), Guid.NewGuid(), Status.ToDo, "", 1, Guid.NewGuid());
 
-        var result = await _controller.Create(dto);
+    var result = await _controller.Create(dto);
 
-        Assert.IsType<BadRequestObjectResult>(result.Result);
-    }
+    Assert.IsType<BadRequestObjectResult>(result.Result);
+}
 
-    [Fact]
-    public async Task Create_ShouldReturnCreated_WhenValid()
+[Fact]
+public async Task Create_ShouldReturnCreated_WhenValid()
+{
+    var userId = Guid.NewGuid().ToString();
+    var user = new ClaimsPrincipal(new ClaimsIdentity([
+        new Claim(ClaimTypes.NameIdentifier, userId)
+    ], "test"));
+    _controller.ControllerContext = new ControllerContext
     {
-        var dto = new ObjectiveCreateDto("Test", Guid.NewGuid(), Guid.NewGuid(), Status.ToDo, "Test", 1, Guid.NewGuid());
-        var objective = new Objective
-        {
-            Id = Guid.NewGuid(),
-            Name = dto.Name,
-            AuthorId = dto.AuthorId,
-            ExecutorId = dto.ExecutorId,
-            Status = dto.Status,
-            Comment = dto.Comment,
-            Priority = dto.Priority,
-            ProjectId = dto.ProjectId
-        };
-        _mockService.Setup(s => s.AddAsync(It.IsAny<Objective>()))
-            .Callback<Objective>(e => e.Id = objective.Id)
-            .Returns(Task.CompletedTask);
+        HttpContext = new DefaultHttpContext { User = user }
+    };
 
-        var result = await _controller.Create(dto);
+    var dto = new ObjectiveCreateDto("Test", Guid.NewGuid(), Guid.NewGuid(), Status.ToDo, "", 1, Guid.NewGuid());
+    var objective = new Objective
+    {
+        Id = Guid.NewGuid(),
+        Name = dto.Name,
+        AuthorId = Guid.NewGuid(),
+        ExecutorId = dto.ExecutorId,
+        Status = dto.Status,
+        Priority = dto.Priority,
+        ProjectId = dto.ProjectId
+    };
 
-        var createdResult = Assert.IsType<CreatedAtActionResult>(result.Result);
-        var dtoResult = Assert.IsType<ObjectiveDto>(createdResult.Value);
-        Assert.Equal(objective.Id, dtoResult.Id);
-    }
+    _mockService.Setup(s => s.GetEmployeeIdByUserId(userId))
+        .ReturnsAsync(objective.AuthorId);
+    _mockService.Setup(s => s.AddAsync(It.IsAny<Objective>()))
+        .Callback<Objective>(e => e.Id = objective.Id)
+        .Returns(Task.CompletedTask);
+
+    var result = await _controller.Create(dto);
+
+    var createdResult = Assert.IsType<CreatedAtActionResult>(result.Result);
+    var dtoResult = Assert.IsType<ObjectiveDto>(createdResult.Value);
+    Assert.Equal(objective.Id, dtoResult.Id);
+}
 
     [Fact]
     public async Task Update_ShouldReturnNotFound_WhenNotExists()
@@ -142,7 +160,6 @@ public class ObjectivesControllerTests
             Id = id, 
             Name = "Old", 
             AuthorId = Guid.NewGuid(), 
-            Comment = "Old", 
             Priority = 0, 
             Status = Status.ToDo, 
             ProjectId = Guid.NewGuid()
@@ -175,7 +192,6 @@ public class ObjectivesControllerTests
             Id = id, 
             Name = "Test", 
             AuthorId = Guid.NewGuid(), 
-            Comment = "Test", 
             Priority = 1, 
             Status = Status.ToDo, 
             ProjectId = Guid.NewGuid()
@@ -212,7 +228,6 @@ public class ObjectivesControllerTests
             Id = objectiveId, 
             Name = "Test", 
             AuthorId = Guid.NewGuid(), 
-            Comment = "Test", 
             Priority = 1, 
             Status = Status.ToDo, 
             ProjectId = Guid.NewGuid()
@@ -237,7 +252,6 @@ public class ObjectivesControllerTests
             Id = objectiveId, 
             Name = "Test", 
             AuthorId = Guid.NewGuid(), 
-            Comment = "Test", 
             Priority = 1, 
             Status = Status.ToDo, 
             ProjectId = Guid.NewGuid()
@@ -273,7 +287,6 @@ public class ObjectivesControllerTests
             Id = objectiveId, 
             Name = "Test", 
             AuthorId = Guid.NewGuid(), 
-            Comment = "Test", 
             Priority = 1, 
             Status = Status.ToDo, 
             ProjectId = Guid.NewGuid() 
@@ -379,7 +392,6 @@ public class ObjectivesControllerTests
             Id = Guid.NewGuid(), 
             Name = "Test", 
             AuthorId = Guid.NewGuid(), 
-            Comment = "Test", 
             Priority = 1, 
             Status = Status.ToDo, 
             ProjectId = Guid.NewGuid()
@@ -393,14 +405,47 @@ public class ObjectivesControllerTests
         {
             HttpContext = new DefaultHttpContext
             {
-                User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, userId) }))
+                User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, userId)]))
             }
         };
 
         var result = await _controller.GetObjectivesForManagerProjects();
 
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnValue = Assert.IsType<List<Objective>>(okResult.Value);
-        Assert.Equal(objectives, returnValue);
+        var returnValue = Assert.IsType<List<ObjectiveDto>>(okResult.Value);
+        Assert.Equal(objectives[0].Id, returnValue[0].Id);
+    }
+
+    [Fact]
+    public async Task GetAssignedObjectives_ShouldReturnOkWithObjectives()
+    {
+        var userId = "testUser";
+        var objectives = new List<Objective>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(), 
+                Name = "Test", 
+                AuthorId = Guid.NewGuid(), 
+                Priority = 1, 
+                Status = Status.ToDo, 
+                ProjectId = Guid.NewGuid()
+            }
+        };
+    
+        _mockService.Setup(s => s.GetEmployeeObjectivesAsync(userId)).ReturnsAsync(objectives);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, userId)
+            ])) }
+        };
+
+        var result = await _controller.GetAssignedObjectives();
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnValue = Assert.IsType<List<ObjectiveDto>>(okResult.Value);
+        Assert.Single(returnValue);
+        Assert.Equal("Test", returnValue[0].Name);
     }
 }

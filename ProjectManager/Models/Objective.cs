@@ -23,7 +23,7 @@ public class Objective : BaseModel
     
     public required int Priority { get; set; }
     
-    public Guid ProjectId { get; set; }
+    public Guid? ProjectId { get; set; }
 
     public Project? Project { get; set; }
 }

@@ -9,13 +9,15 @@ public class ObjectiveServiceTests
 {
     private readonly Mock<IObjectiveRepository> _mockObjectiveRepo;
     private readonly Mock<IEmployeeRepository> _mockEmployeeRepo;
+    private readonly Mock<IProjectRepository> _mockProjectRepo;
     private readonly ObjectiveService _service;
 
     public ObjectiveServiceTests()
     {
         _mockObjectiveRepo = new Mock<IObjectiveRepository>();
         _mockEmployeeRepo = new Mock<IEmployeeRepository>();
-        _service = new ObjectiveService(_mockObjectiveRepo.Object, _mockEmployeeRepo.Object);
+        _mockProjectRepo = new  Mock<IProjectRepository>();
+        _service = new ObjectiveService(_mockObjectiveRepo.Object, _mockEmployeeRepo.Object, _mockProjectRepo.Object);
     }
 
     [Fact]
@@ -128,6 +130,7 @@ public class ObjectiveServiceTests
 
         _mockEmployeeRepo.Setup(r => r.GetEmployeeIdByUserIdAsync(userId)).ReturnsAsync(employeeId);
         _mockObjectiveRepo.Setup(r => r.GetObjectiveByIdAndAssigneeAsync(objectiveId, employeeId)).ReturnsAsync(objective);
+        _mockObjectiveRepo.Setup(r => r.GetByIdAsync(objectiveId)).ReturnsAsync(objective);
         _mockObjectiveRepo.Setup(r => r.UpdateObjectiveAsync(objective)).Returns(Task.CompletedTask);
 
         var result = await _service.UpdateObjectiveStatusAsync(objectiveId, newStatus, userId, roles);
@@ -158,10 +161,22 @@ public class ObjectiveServiceTests
             Status = Status.ToDo, 
             ProjectId = projectId 
         };
+        
+        var project = new Project
+        {
+            Id = projectId,
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            Priority = 1,
+            DirectorId = managerId
+        };
 
         _mockEmployeeRepo.Setup(r => r.GetEmployeeIdByUserIdAsync(userId)).ReturnsAsync(managerId);
         _mockObjectiveRepo.Setup(r => r.GetByIdAsync(objectiveId)).ReturnsAsync(objective);
-        _mockEmployeeRepo.Setup(r => r.IsEmployeeInProjectAsync(managerId, projectId)).ReturnsAsync(true);
+    
+        _mockProjectRepo.Setup(r => r.GetByIdAsync(projectId)).ReturnsAsync(project);
+    
         _mockObjectiveRepo.Setup(r => r.UpdateObjectiveAsync(objective)).Returns(Task.CompletedTask);
 
         var result = await _service.UpdateObjectiveStatusAsync(objectiveId, newStatus, userId, roles);
@@ -243,7 +258,6 @@ public class ObjectiveServiceTests
 
         _mockEmployeeRepo.Setup(r => r.GetEmployeeIdByUserIdAsync(userId)).ReturnsAsync(managerId);
         _mockObjectiveRepo.Setup(r => r.GetByIdAsync(objectiveId)).ReturnsAsync(objective);
-        _mockEmployeeRepo.Setup(r => r.IsEmployeeInProjectAsync(managerId, projectId)).ReturnsAsync(false);
 
         var result = await _service.UpdateObjectiveStatusAsync(objectiveId, newStatus, userId, roles);
 
@@ -304,5 +318,40 @@ public class ObjectiveServiceTests
 
         Assert.Equal(objectives, result);
         _mockObjectiveRepo.Verify(r => r.GetObjectivesByDirectorIdAsync(employeeId), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetEmployeeObjectivesAsync_ShouldReturnObjectives_WhenEmployeeExists()
+    {
+        var userId = "Test";
+        var employeeId = Guid.NewGuid();
+        var objectives = new List<Objective> { new()
+        {
+            Id = Guid.NewGuid(), 
+            Name = "Test", 
+            AuthorId = Guid.NewGuid(), 
+            Priority = 1, 
+            Status = Status.ToDo, 
+            ProjectId = Guid.NewGuid()
+        }};
+
+        _mockEmployeeRepo.Setup(r => r.GetEmployeeIdByUserIdAsync(userId)).ReturnsAsync(employeeId);
+        _mockEmployeeRepo.Setup(r => r.GetObjectivesByEmployeeIdAsync(employeeId)).ReturnsAsync(objectives);
+
+        var result = await _service.GetEmployeeObjectivesAsync(userId);
+
+        Assert.Equal(objectives, result);
+    }
+
+    [Fact]
+    public async Task GetEmployeeObjectivesAsync_ShouldReturnEmptyList_WhenEmployeeNotExists()
+    {
+        var userId = "Test";
+
+        _mockEmployeeRepo.Setup(r => r.GetEmployeeIdByUserIdAsync(userId)).ReturnsAsync((Guid?)null);
+
+        var result = await _service.GetEmployeeObjectivesAsync(userId);
+
+        Assert.Empty(result);
     }
 }

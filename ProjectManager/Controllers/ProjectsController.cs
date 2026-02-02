@@ -13,7 +13,8 @@ public class ProjectsController(IProjectService service) : ControllerBase
 {
     private static ProjectDto MapToDto(Project p)
     {
-        var employeeIds = p.EmployeeProjects.Select(ep => ep.EmployeeId).ToList();
+        var employeesIds = p.EmployeeProjects.Select(ep => ep.EmployeeId).ToList();
+        var objectivesIds = p.Objectives.Select(ep => ep.Id).ToList();
         
         return new ProjectDto(
             p.Id,
@@ -24,7 +25,8 @@ public class ProjectsController(IProjectService service) : ControllerBase
             p.EndTime,
             p.Priority,
             p.DirectorId,
-            employeeIds
+            employeesIds,
+            objectivesIds
         );
     }
 
@@ -77,31 +79,6 @@ public class ProjectsController(IProjectService service) : ControllerBase
 
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, MapToDto(created));
     }
-    
-    [Authorize(Policy = "RequireManagerOrAbove")]
-    [HttpPost("{projectId:guid}/documents")]
-    public async Task<IActionResult> UploadDocuments(Guid projectId, List<IFormFile>? files)
-    {
-        if (files == null || files.Count == 0)
-            return BadRequest("No files uploaded");
-
-        var project = await service.GetByIdAsync(projectId);
-        if (project == null)
-            return NotFound("Project not found");
-
-        var uploadPath = Path.Combine("uploads", projectId.ToString());
-        Directory.CreateDirectory(uploadPath);
-
-        foreach (var file in files)
-        {
-            if (file.Length <= 0) continue;
-            var filePath = Path.Combine(uploadPath, file.FileName);
-            await using var stream = new FileStream(filePath, FileMode.Create);
-            await file.CopyToAsync(stream);
-        }
-
-        return Ok("Documents uploaded successfully");
-    }
 
     [Authorize(Roles = "director")]
     [HttpPut("{id:guid}")]
@@ -125,7 +102,7 @@ public class ProjectsController(IProjectService service) : ControllerBase
 
         return NoContent();
     }
-    
+
     [Authorize(Roles = "director")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
@@ -136,6 +113,31 @@ public class ProjectsController(IProjectService service) : ControllerBase
 
         await service.DeleteAsync(id);
         return NoContent();
+    }
+
+    [Authorize(Policy = "RequireManagerOrAbove")]
+    [HttpPost("{projectId:guid}/documents")]
+    public async Task<IActionResult> UploadDocuments(Guid projectId, List<IFormFile>? files)
+    {
+        if (files == null || files.Count == 0)
+            return BadRequest("No files uploaded");
+
+        var project = await service.GetByIdAsync(projectId);
+        if (project == null)
+            return NotFound("Project not found");
+
+        var uploadPath = Path.Combine("uploads", projectId.ToString());
+        Directory.CreateDirectory(uploadPath);
+
+        foreach (var file in files)
+        {
+            if (file.Length <= 0) continue;
+            var filePath = Path.Combine(uploadPath, file.FileName);
+            await using var stream = new FileStream(filePath, FileMode.Create);
+            await file.CopyToAsync(stream);
+        }
+
+        return Ok("Documents uploaded successfully");
     }
 
     [Authorize(Policy = "RequireManagerOrAbove")]
@@ -195,6 +197,18 @@ public class ProjectsController(IProjectService service) : ControllerBase
             return Forbid();
 
         var projects = await service.GetManagerProjectsAsync(userId);
-        return Ok(projects);
+        return Ok(projects.Select(MapToDto).ToList());
+    }
+    
+    [Authorize(Policy = "RequireEmployeeOrAbove")]
+    [HttpGet("assigned-projects")]
+    public async Task<IActionResult> GetAssignedProjects()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return Forbid();
+        
+        var projects = await service.GetEmployeeProjectsAsync(userId);
+        return Ok(projects.Select(MapToDto).ToList());
     }
 }

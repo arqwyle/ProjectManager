@@ -25,7 +25,7 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
         );
     }
     
-    [Authorize(Roles = "director")]
+    [Authorize(Policy = "RequireManagerOrAbove")]
     [HttpGet]
     public async Task<ActionResult<List<ObjectiveDto>>> GetAll(
         [FromQuery] List<Status>? statuses = null,
@@ -37,7 +37,7 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
         return Ok(objectives.Select(MapToDto).ToList());
     }
     
-    [Authorize(Roles = "director")]
+    [Authorize(Policy = "RequireManagerOrAbove")]
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ObjectiveDto>> GetById(Guid id)
     {
@@ -50,16 +50,24 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
 
     [Authorize(Policy = "RequireManagerOrAbove")]
     [HttpPost]
-    public async Task<ActionResult<ObjectiveDto>> Create(ObjectiveCreateDto dto)
+    public async Task<ActionResult<ObjectiveDto>> Create([FromBody] ObjectiveCreateDto dto)
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return Forbid();
+        
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
+        
+        var employeeId = await service.GetEmployeeIdByUserId(userId);
+        if (employeeId == null)
+            return Forbid();
 
         var objective = new Objective
         {
             Id = Guid.NewGuid(),
             Name = dto.Name,
-            AuthorId = dto.AuthorId,
+            AuthorId = (Guid)employeeId,
             ExecutorId = dto.ExecutorId,
             Status = dto.Status,
             Comment = dto.Comment,
@@ -105,18 +113,6 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
     }
 
     [Authorize(Policy = "RequireManagerOrAbove")]
-    [HttpGet("my-projects-objectives")]
-    public async Task<IActionResult> GetObjectivesForManagerProjects()
-    {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userId))
-            return Forbid();
-
-        var objectives = await service.GetObjectivesForManagerProjectsAsync(userId);
-        return Ok(objectives);
-    }
-
-    [Authorize(Policy = "RequireManagerOrAbove")]
     [HttpPost("{objectiveId:guid}/executor/{employeeId:guid}")]
     public async Task<IActionResult> AssignExecutor(Guid objectiveId, Guid employeeId)
     {
@@ -133,7 +129,7 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
 
         return NoContent();
     }
-    
+
     [Authorize(Policy = "RequireManagerOrAbove")]
     [HttpPut("{objectiveId:guid}/executor")]
     public async Task<IActionResult> UpdateExecutor(Guid objectiveId, Guid  executorId)
@@ -147,7 +143,19 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
 
         return NoContent();
     }
-    
+
+    [Authorize(Policy = "RequireManagerOrAbove")]
+    [HttpGet("my-projects-objectives")]
+    public async Task<IActionResult> GetObjectivesForManagerProjects()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return Forbid();
+
+        var objectives = await service.GetObjectivesForManagerProjectsAsync(userId);
+        return Ok(objectives.Select(MapToDto).ToList());
+    }
+
     [Authorize(Policy = "RequireEmployeeOrAbove")]
     [HttpPatch("{objectiveId:guid}/update-status")]
     public async Task<IActionResult> UpdateObjectiveStatus(Guid objectiveId, [FromBody] Status status)
@@ -164,5 +172,17 @@ public class ObjectivesController(IObjectiveService service) : ControllerBase
         var success = await service.UpdateObjectiveStatusAsync(objectiveId, status, userId, roles);
 
         return success ? NoContent() : Forbid();
+    }
+
+    [Authorize(Policy = "RequireEmployeeOrAbove")]
+    [HttpGet("assigned-objectives")]
+    public async Task<IActionResult> GetAssignedObjectives()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return Forbid();
+        
+        var objectives = await service.GetEmployeeObjectivesAsync(userId);
+        return Ok(objectives.Select(MapToDto).ToList());
     }
 }

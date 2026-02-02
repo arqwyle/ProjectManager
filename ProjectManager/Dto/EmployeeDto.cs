@@ -7,5 +7,8 @@ public record EmployeeDto(
     [Required] string FirstName,
     [Required] string LastName,
     [Required] string Patronymic,
-    [Required] string Mail
+    [Required] string Mail,
+    List<Guid> ProjectsIds,
+    List<Guid> AuthoredObjectivesIds,
+    List<Guid> AssignedObjectivesIds
 );

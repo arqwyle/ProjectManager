@@ -1,5 +1,4 @@
-﻿using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ProjectManager.Dto;
 using ProjectManager.Models;
@@ -13,12 +12,19 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
 {
     private static EmployeeDto MapToDto(Employee e)
     {
+        var projectsIds = e.EmployeeProjects.Select(ep => ep.ProjectId).ToList();
+        var authoredObjectivesIds = e.AuthoredObjectives.Select(ep => ep.Id).ToList();
+        var assignedObjectivesIds = e.AssignedObjectives.Select(ep => ep.Id).ToList();
+        
         return new EmployeeDto(
             e.Id,
             e.FirstName,
             e.LastName,
             e.Patronymic,
-            e.Mail
+            e.Mail,
+            projectsIds,
+            authoredObjectivesIds,
+            assignedObjectivesIds
         );
     }
     
@@ -66,16 +72,19 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, EmployeeDto dto)
     {
-        var existing = await service.GetByIdAsync(id);
-        if (existing == null)
+        var employee = await service.GetByIdAsync(id);
+        if (employee == null)
             return NotFound();
 
-        existing.FirstName = dto.FirstName;
-        existing.LastName = dto.LastName;
-        existing.Patronymic = dto.Patronymic;
-        existing.Mail = dto.Mail;
+        employee.FirstName = dto.FirstName;
+        employee.LastName = dto.LastName;
+        employee.Patronymic = dto.Patronymic;
+        employee.Mail = dto.Mail;
 
-        await service.UpdateAsync(existing);
+        await service.UpdateAsync(employee);
+        
+        await service.UpdateProjectLinksAsync(employee.Id, dto.ProjectsIds);
+        
         return NoContent();
     }
     
@@ -89,29 +98,5 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
 
         await service.DeleteAsync(id);
         return NoContent();
-    }
-
-    [Authorize(Policy = "RequireEmployeeOrAbove")]
-    [HttpGet("assigned-projects")]
-    public async Task<IActionResult> GetAssignedProjects()
-    {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userId))
-            return Forbid();
-        
-        var projects = await service.GetEmployeeProjectsAsync(userId);
-        return Ok(projects);
-    }
-
-    [Authorize(Policy = "RequireEmployeeOrAbove")]
-    [HttpGet("assigned-objectives")]
-    public async Task<IActionResult> GetAssignedObjectives()
-    {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userId))
-            return Forbid();
-        
-        var objectives = await service.GetEmployeeObjectivesAsync(userId);
-        return Ok(objectives);
     }
 }

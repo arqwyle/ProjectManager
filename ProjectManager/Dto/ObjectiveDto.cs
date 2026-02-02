@@ -11,5 +11,5 @@ public record ObjectiveDto(
     Status Status,
     string? Comment,
     [Required] int Priority,
-    [Required] Guid ProjectId
+    Guid? ProjectId
 );

@@ -240,7 +240,7 @@ public class ProjectsControllerTests
     public async Task Update_ShouldReturnNoContent_WhenValid()
     {
         var id = Guid.NewGuid();
-        var dto = new ProjectDto(id, "Updated", "", "", DateTime.Now, DateTime.Now, 1, Guid.NewGuid(), []);
+        var dto = new ProjectDto(id, "Updated", "", "", DateTime.Now, DateTime.Now, 1, Guid.NewGuid(), [], []);
         var existingProject = new Project
         {
             Id = id, 
@@ -264,7 +264,7 @@ public class ProjectsControllerTests
     public async Task Update_ShouldReturnNotFound_WhenProjectNotExists()
     {
         var id = Guid.NewGuid();
-        var dto = new ProjectDto(id, "Test", "", "", DateTime.Now, DateTime.Now, 1, Guid.NewGuid(), []);
+        var dto = new ProjectDto(id, "Test", "", "", DateTime.Now, DateTime.Now, 1, Guid.NewGuid(), [], []);
         _mockService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync((Project?)null);
 
         var result = await _controller.Update(id, dto);
@@ -431,7 +431,39 @@ public class ProjectsControllerTests
         var result = await _controller.GetMyProjects();
 
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnValue = Assert.IsType<List<Project>>(okResult.Value);
-        Assert.Equal(projects, returnValue);
+        var returnValue = Assert.IsType<List<ProjectDto>>(okResult.Value);
+        Assert.Equal(projects[0].Id, returnValue[0].Id);
+    }
+    
+    [Fact]
+    public async Task GetAssignedProjects_ShouldReturnOkWithProjects()
+    {
+        var userId = "testUser";
+        var projects = new List<Project>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(), 
+                Name = "Test", 
+                CustomerName = "Test", 
+                ExecutorName = "Test", 
+                Priority = 1
+            }
+        };
+    
+        _mockService.Setup(s => s.GetEmployeeProjectsAsync(userId)).ReturnsAsync(projects);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, userId)
+            ])) }
+        };
+
+        var result = await _controller.GetAssignedProjects();
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnValue = Assert.IsType<List<ProjectDto>>(okResult.Value);
+        Assert.Single(returnValue);
+        Assert.Equal("Test", returnValue[0].Name);
     }
 }

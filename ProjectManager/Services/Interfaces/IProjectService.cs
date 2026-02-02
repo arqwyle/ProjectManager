@@ -21,5 +21,7 @@ public interface IProjectService
     Task RemoveEmployeeFromProjectAsync(Guid projectId, Guid employeeId);
     Task AddObjectiveToProjectAsync(Guid projectId, Guid objectiveId);
     Task RemoveObjectiveFromProjectAsync(Guid projectId, Guid objectiveId);
+    Task<Guid?> GetEmployeeIdByUserId(string userId);
     Task<List<Project>> GetManagerProjectsAsync(string userName);
+    Task<List<Project>> GetEmployeeProjectsAsync(string userId);
 }

@@ -220,4 +220,38 @@ public class ProjectServiceTests
         Assert.Equal(projects, result);
         _mockProjectRepo.Verify(r => r.GetProjectsByDirectorIdAsync(employeeId), Times.Once);
     }
+    
+    [Fact]
+    public async Task GetEmployeeProjectsAsync_ShouldReturnProjects_WhenEmployeeExists()
+    {
+        var userId = "Test";
+        var employeeId = Guid.NewGuid();
+        var projects = new List<Project> { new()
+        {
+            Id = Guid.NewGuid(), 
+            Name = "1", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            Priority = 1
+        } };
+
+        _mockEmployeeRepo.Setup(r => r.GetEmployeeIdByUserIdAsync(userId)).ReturnsAsync(employeeId);
+        _mockEmployeeRepo.Setup(r => r.GetProjectsByEmployeeIdAsync(employeeId)).ReturnsAsync(projects);
+
+        var result = await _service.GetEmployeeProjectsAsync(userId);
+
+        Assert.Equal(projects, result);
+    }
+
+    [Fact]
+    public async Task GetEmployeeProjectsAsync_ShouldReturnEmptyList_WhenEmployeeNotExists()
+    {
+        var userId = "Test";
+
+        _mockEmployeeRepo.Setup(r => r.GetEmployeeIdByUserIdAsync(userId)).ReturnsAsync((Guid?)null);
+
+        var result = await _service.GetEmployeeProjectsAsync(userId);
+
+        Assert.Empty(result);
+    }
 }

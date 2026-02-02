@@ -30,7 +30,7 @@ public class ProjectRepository(AppDbContext context) : IProjectRepository
         string? sortBy = null,
         bool isSortAscending = true)
     {
-        IQueryable<Project> query = context.Projects;
+        IQueryable<Project> query = context.Projects.Include(p => p.EmployeeProjects);
         
         if(!string.IsNullOrEmpty(customerName))
             query = query.Where(p => p.CustomerName == customerName);
@@ -97,6 +97,18 @@ public class ProjectRepository(AppDbContext context) : IProjectRepository
         }
     }
 
+    public async Task RemoveEmployeeFromProjectAsync(Guid projectId, Guid employeeId)
+    {
+        var link = await context.EmployeeProjects
+            .FirstOrDefaultAsync(ep => ep.ProjectId == projectId && ep.EmployeeId == employeeId);
+            
+        if (link != null)
+        {
+            context.EmployeeProjects.Remove(link);
+            await context.SaveChangesAsync();
+        }
+    }
+
     public async Task UpdateEmployeeLinksAsync(Guid projectId, List<Guid> employeeIds)
     {
         var existingLinks = await context.EmployeeProjects
@@ -117,19 +129,7 @@ public class ProjectRepository(AppDbContext context) : IProjectRepository
 
         await context.SaveChangesAsync();
     }
-    
-    public async Task RemoveEmployeeFromProjectAsync(Guid projectId, Guid employeeId)
-    {
-        var link = await context.EmployeeProjects
-            .FirstOrDefaultAsync(ep => ep.ProjectId == projectId && ep.EmployeeId == employeeId);
-            
-        if (link != null)
-        {
-            context.EmployeeProjects.Remove(link);
-            await context.SaveChangesAsync();
-        }
-    }
-    
+
     public async Task AddObjectiveToProjectAsync(Guid projectId, Guid objectiveId)
     {
         var objective = await context.Objectives.FindAsync(objectiveId);
@@ -155,6 +155,7 @@ public class ProjectRepository(AppDbContext context) : IProjectRepository
     public async Task<List<Project>> GetProjectsByDirectorIdAsync(Guid directorId)
     {
         return await context.Projects
+            .Include(ep => ep.EmployeeProjects)
             .Where(ep => ep.DirectorId == directorId)
             .ToListAsync();
     }

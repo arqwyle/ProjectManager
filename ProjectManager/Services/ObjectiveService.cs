@@ -4,7 +4,10 @@ using ProjectManager.Services.Interfaces;
 
 namespace ProjectManager.Services;
 
-public class ObjectiveService(IObjectiveRepository objectiveRepository, IEmployeeRepository employeeRepository) : IObjectiveService
+public class ObjectiveService(
+    IObjectiveRepository objectiveRepository, 
+    IEmployeeRepository employeeRepository,
+    IProjectRepository projectRepository) : IObjectiveService
 {
     public async Task<List<Objective>> GetAllAsync(
         List<Status>? statuses = null,
@@ -27,7 +30,10 @@ public class ObjectiveService(IObjectiveRepository objectiveRepository, IEmploye
     
     public async Task<bool> IsEmployeeInObjectiveProjectAsync(Guid objectiveId, Guid employeeId)
         => await objectiveRepository.IsEmployeeInObjectiveProjectAsync(objectiveId, employeeId);
-    
+
+    public async Task<Guid?> GetEmployeeIdByUserId(string userId)
+        => await employeeRepository.GetEmployeeIdByUserIdAsync(userId);
+
     public async Task<List<Objective>> GetObjectivesForManagerProjectsAsync(string userId)
     {
         var employeeId = await employeeRepository.GetEmployeeIdByUserIdAsync(userId);
@@ -36,61 +42,68 @@ public class ObjectiveService(IObjectiveRepository objectiveRepository, IEmploye
 
         return await objectiveRepository.GetObjectivesByDirectorIdAsync(employeeId.Value);
     }
-    
+
     public async Task<bool> UpdateObjectiveStatusAsync(Guid objectiveId, Status status, string userId, List<string> roles)
     {
         if (roles.Contains("director"))
-            return await UpdateObjectiveStatusInternal(objectiveId, status);
+            return await UpdateObjectiveIfAllowed(objectiveId, status, _ => Task.FromResult(true));
 
         if (!roles.Contains("project manager") && !roles.Contains("employee"))
             return false;
 
-        var employeeId = await employeeRepository.GetEmployeeIdByUserIdAsync(userId);
-        if (employeeId == null) return false;
+        var employeeId = await GetEmployeeIdByUserId(userId);
+        if (employeeId == null)
+            return false;
 
         if (roles.Contains("employee"))
-            return await UpdateObjectiveIfAssignedToEmployee(objectiveId, status, employeeId.Value);
+            return await UpdateObjectiveIfAllowed(
+                objectiveId,
+                status,
+                async id =>
+                {
+                    var objective = await objectiveRepository.GetObjectiveByIdAndAssigneeAsync(id, employeeId.Value);
+                    return objective != null;
+                }
+            );
 
         if (roles.Contains("project manager"))
-            return await UpdateObjectiveIfManagerInProject(objectiveId, status, employeeId.Value);
+            return await UpdateObjectiveIfAllowed(
+                objectiveId,
+                status,
+                async id =>
+                {
+                    var objective = await objectiveRepository.GetByIdAsync(id);
+                    if (objective?.ProjectId == null) 
+                        return false;
+
+                    var project = await projectRepository.GetByIdAsync((Guid)objective.ProjectId);
+                    return project?.DirectorId == employeeId.Value;
+                }
+            );
 
         return false;
     }
 
-    private async Task<bool> UpdateObjectiveStatusInternal(Guid objectiveId, Status status)
+    private async Task<bool> UpdateObjectiveIfAllowed(Guid objectiveId, Status status, Func<Guid, Task<bool>> canUpdate)
     {
-        var objective = await objectiveRepository.GetByIdAsync(objectiveId);
-        if (objective == null) 
+        if (!await canUpdate(objectiveId))
             return false;
-        
+
+        var objective = await objectiveRepository.GetByIdAsync(objectiveId);
+        if (objective == null)
+            return false;
+
         objective.Status = status;
         await objectiveRepository.UpdateObjectiveAsync(objective);
         return true;
     }
 
-    private async Task<bool> UpdateObjectiveIfAssignedToEmployee(Guid objectiveId, Status status, Guid employeeId)
+    public async Task<List<Objective>> GetEmployeeObjectivesAsync(string userId)
     {
-        var objective = await objectiveRepository.GetObjectiveByIdAndAssigneeAsync(objectiveId, employeeId);
-        if (objective == null) 
-            return false;
-        
-        objective.Status = status;
-        await objectiveRepository.UpdateObjectiveAsync(objective);
-        return true;
-    }
+        var employeeId = await GetEmployeeIdByUserId(userId);
+        if (employeeId == null) 
+            return [];
 
-    private async Task<bool> UpdateObjectiveIfManagerInProject(Guid objectiveId, Status status, Guid employeeId)
-    {
-        var objective = await objectiveRepository.GetByIdAsync(objectiveId);
-        if (objective == null) 
-            return false;
-        
-        var isInProject = await employeeRepository.IsEmployeeInProjectAsync(employeeId, objective.ProjectId);
-        if (!isInProject) 
-            return false;
-        
-        objective.Status = status;
-        await objectiveRepository.UpdateObjectiveAsync(objective);
-        return true;
+        return await employeeRepository.GetObjectivesByEmployeeIdAsync(employeeId);
     }
 }

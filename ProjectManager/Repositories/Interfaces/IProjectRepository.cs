@@ -16,10 +16,9 @@ public interface IProjectRepository
     Task<Project> AddAsync(Project project);
     Task UpdateAsync(Project project);
     Task DeleteAsync(Guid id);
-    
     Task AddEmployeeToProjectAsync(Guid projectId, Guid employeeId);
-    Task UpdateEmployeeLinksAsync(Guid projectId, List<Guid> employeeIds);
     Task RemoveEmployeeFromProjectAsync(Guid projectId, Guid employeeId);
+    Task UpdateEmployeeLinksAsync(Guid projectId, List<Guid> employeeIds);
     Task AddObjectiveToProjectAsync(Guid projectId, Guid objectiveId);
     Task RemoveObjectiveFromProjectAsync(Guid projectId, Guid objectiveId);
     Task<List<Project>> GetProjectsByDirectorIdAsync(Guid directorId);

@@ -42,13 +42,25 @@ public class ProjectService(IProjectRepository projectRepository, IEmployeeRepos
     
     public async Task RemoveObjectiveFromProjectAsync(Guid projectId, Guid objectiveId)
         => await projectRepository.RemoveObjectiveFromProjectAsync(projectId, objectiveId);
-    
+
+    public async Task<Guid?> GetEmployeeIdByUserId(string userId)
+        => await employeeRepository.GetEmployeeIdByUserIdAsync(userId);
+
     public async Task<List<Project>> GetManagerProjectsAsync(string userId)
     {
-        var employeeId = await employeeRepository.GetEmployeeIdByUserIdAsync(userId);
+        var employeeId = await GetEmployeeIdByUserId(userId);
         if (employeeId == null) 
             return [];
 
         return await projectRepository.GetProjectsByDirectorIdAsync(employeeId.Value);
+    }
+
+    public async Task<List<Project>> GetEmployeeProjectsAsync(string userId)
+    {
+        var employeeId = await GetEmployeeIdByUserId(userId);
+        if (employeeId == null) 
+            return [];
+
+        return await employeeRepository.GetProjectsByEmployeeIdAsync(employeeId);
     }
 }

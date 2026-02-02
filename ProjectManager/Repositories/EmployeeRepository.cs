@@ -14,7 +14,11 @@ public class EmployeeRepository(AppDbContext context) : IEmployeeRepository
 
     public async Task<List<Employee>> GetAllAsync()
     {
-        return await context.Employees.ToListAsync();
+        return await context.Employees
+            .Include(ep => ep.EmployeeProjects)
+            .Include(ep => ep.AuthoredObjectives)
+            .Include(ep => ep.AssignedObjectives)
+            .ToListAsync();
     }
 
     public async Task AddAsync(Employee employee)
@@ -47,12 +51,6 @@ public class EmployeeRepository(AppDbContext context) : IEmployeeRepository
             .FirstOrDefaultAsync();
     }
     
-    public async Task<bool> IsEmployeeInProjectAsync(Guid employeeId, Guid projectId)
-    {
-        return await context.EmployeeProjects
-            .AnyAsync(ep => ep.EmployeeId == employeeId && ep.ProjectId == projectId);
-    }
-    
     public async Task<List<Project>> GetProjectsByEmployeeIdAsync(Guid? employeeId)
     {
         var employeeProjects = await context.EmployeeProjects
@@ -68,5 +66,23 @@ public class EmployeeRepository(AppDbContext context) : IEmployeeRepository
         return await context.Objectives
             .Where(o => o.ExecutorId == employeeId)
             .ToListAsync();
+    }
+    
+    public async Task UpdateProjectLinksAsync(Guid employeeId, List<Guid> projectIds)
+    {
+        var existing = await context.EmployeeProjects
+            .Where(ep => ep.EmployeeId == employeeId)
+            .ToListAsync();
+
+        var toRemove = existing.Where(ep => !projectIds.Contains(ep.ProjectId)).ToList();
+        context.EmployeeProjects.RemoveRange(toRemove);
+
+        var existingProjectIds = existing.Select(ep => ep.ProjectId).ToHashSet();
+        var toAdd = projectIds.Where(pid => !existingProjectIds.Contains(pid))
+            .Select(pid => new EmployeeProject { EmployeeId = employeeId, ProjectId = pid });
+
+        context.EmployeeProjects.AddRange(toAdd);
+
+        await context.SaveChangesAsync();
     }
 }

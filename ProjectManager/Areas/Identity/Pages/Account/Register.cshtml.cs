@@ -81,6 +81,7 @@ namespace ProjectManager.Areas.Identity.Pages.Account
             [Required] public string FirstName { get; set; } = null!;
             [Required] public string LastName { get; set; } = null!;
             public string Patronymic { get; set; }
+            public string Role { get; set; }
             /// <summary>
             ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
             ///     directly from your code. This API may change or be removed in future releases.
@@ -151,10 +152,10 @@ namespace ProjectManager.Areas.Identity.Pages.Account
                     }
                     else
                     {
-                        const string defaultRole = "employee";
-                        if (!await _roleManager.RoleExistsAsync(defaultRole))
-                            await _roleManager.CreateAsync(new IdentityRole(defaultRole));
-                        await _userManager.AddToRoleAsync(user, defaultRole);
+                        var role = Input.Role;
+                        if (!await _roleManager.RoleExistsAsync(role))
+                            await _roleManager.CreateAsync(new IdentityRole(role));
+                        await _userManager.AddToRoleAsync(user, role);
 
                         var employee = new Employee
                         {
