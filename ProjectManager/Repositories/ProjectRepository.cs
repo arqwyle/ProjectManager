@@ -17,21 +17,29 @@ public class ProjectRepository(AppDbContext context) : IProjectRepository
             "starttime" => isAsc ? query.OrderBy(p => p.StartTime) : query.OrderByDescending(p => p.StartTime),
             "endtime" => isAsc ? query.OrderBy(p => p.EndTime) : query.OrderByDescending(p => p.EndTime),
             "priority" => isAsc ? query.OrderBy(p => p.Priority) : query.OrderByDescending(p => p.Priority),
-            _ => isAsc ? query.OrderBy(p => p.StartTime) : query.OrderByDescending(p => p.StartTime)
+            "director" => isAsc ? query.OrderBy(p => p.Director != null ? p.Director.LastName : string.Empty)
+                : query.OrderByDescending(p => p.Director != null ? p.Director.LastName : string.Empty),
+            _ => isAsc ? query.OrderBy(p => p.Id) : query.OrderByDescending(p => p.Id)
         };
     }
     
     public async Task<List<Project>> GetAllAsync(
+        string? name = null,
         string? customerName = null,
         string? executorName = null,
         DateTime? startTimeFrom = null,
         DateTime? startTimeTo = null,
         List<int>? priorities = null,
+        Guid? directorId = null,
         string? sortBy = null,
         bool isSortAscending = true)
     {
-        IQueryable<Project> query = context.Projects.Include(p => p.EmployeeProjects);
+        IQueryable<Project> query = context.Projects
+            .Include(p => p.EmployeeProjects)
+            .Include(p => p.Director);
         
+        if (!string.IsNullOrWhiteSpace(name))
+            query = query.Where(p => p.Name.Contains(name));
         if(!string.IsNullOrEmpty(customerName))
             query = query.Where(p => p.CustomerName == customerName);
         if(!string.IsNullOrEmpty(executorName))
@@ -42,6 +50,8 @@ public class ProjectRepository(AppDbContext context) : IProjectRepository
             query = query.Where(p => p.StartTime <= startTimeTo.Value);
         if (priorities?.Count > 0)
             query = query.Where(p => priorities.Contains(p.Priority));
+        if (directorId.HasValue)
+            query = query.Where(p => p.DirectorId == directorId.Value);
 
         query = ApplySorting(query, sortBy, isSortAscending);
         return await query.ToListAsync();
@@ -74,7 +84,6 @@ public class ProjectRepository(AppDbContext context) : IProjectRepository
         
         if (project != null)
         {
-            context.EmployeeProjects.RemoveRange(project.EmployeeProjects);
             context.Projects.Remove(project);
             await context.SaveChangesAsync();
         }

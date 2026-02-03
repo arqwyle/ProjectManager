@@ -30,12 +30,24 @@ public class ObjectivesController(
     [Authorize(Policy = "RequireManagerOrAbove")]
     [HttpGet]
     public async Task<ActionResult<List<ObjectiveDto>>> GetAll(
+        [FromQuery] string? name = null,
         [FromQuery] List<Status>? statuses = null,
         [FromQuery] List<int>? priorities = null,
+        [FromQuery] Guid? authorId = null,
+        [FromQuery] Guid? executorId = null,
+        [FromQuery] Guid? projectId = null,
         [FromQuery] string? sortBy = null,
         [FromQuery] bool isSortAscending = true)
     {
-        var objectives = await objectiveService.GetAllAsync(statuses, priorities, sortBy, isSortAscending);
+        var objectives = await objectiveService.GetAllAsync(
+            name,
+            statuses, 
+            priorities, 
+            authorId, 
+            executorId, 
+            projectId, 
+            sortBy, 
+            isSortAscending);
         return Ok(objectives.Select(MapToDto).ToList());
     }
     
@@ -84,7 +96,7 @@ public class ObjectivesController(
 
     [Authorize(Policy = "RequireManagerOrAbove")]
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, ObjectiveDto dto)
+    public async Task<IActionResult> Update(Guid id, ObjectiveCreateDto dto)
     {
         var existing = await objectiveService.GetByIdAsync(id);
         if (existing == null)

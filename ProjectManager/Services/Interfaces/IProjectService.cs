@@ -5,11 +5,13 @@ namespace ProjectManager.Services.Interfaces;
 public interface IProjectService
 {
     Task<List<Project>> GetAllAsync(
+        string? name = null,
         string? customerName = null,
         string? executorName = null,
         DateTime? startTimeFrom = null,
         DateTime? startTimeTo = null,
         List<int>? priorities = null,
+        Guid? directorId = null,
         string? sortBy = null,
         bool isSortAscending = true);
     Task<Project?> GetByIdAsync(Guid id);

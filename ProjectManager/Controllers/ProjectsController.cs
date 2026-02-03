@@ -36,15 +36,26 @@ public class ProjectsController(
     [Authorize(Roles = "director")]
     [HttpGet]
     public async Task<ActionResult<List<ProjectDto>>> GetAll(
+        [FromQuery] string? name = null,
         [FromQuery] string? customerName = null,
         [FromQuery] string? executorName = null,
         [FromQuery] DateTime? startTimeFrom = null,
         [FromQuery] DateTime? startTimeTo = null,
         [FromQuery] List<int>? priorities = null,
+        [FromQuery] Guid? directorId = null,
         [FromQuery] string? sortBy = null,
         [FromQuery] bool isSortAscending = true)
     {
-        var projects = await projectService.GetAllAsync(customerName, executorName, startTimeFrom, startTimeTo, priorities, sortBy, isSortAscending);
+        var projects = await projectService.GetAllAsync(
+            name,
+            customerName, 
+            executorName, 
+            startTimeFrom, 
+            startTimeTo, 
+            priorities, 
+            directorId, 
+            sortBy, 
+            isSortAscending);
         return Ok(projects.Select(MapToDto).ToList());
     }
     
@@ -85,7 +96,7 @@ public class ProjectsController(
 
     [Authorize(Roles = "director")]
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, ProjectDto dto)
+    public async Task<IActionResult> Update(Guid id, ProjectCreateDto dto)
     {
         var project = await projectService.GetByIdAsync(id);
         if (project == null)

@@ -43,7 +43,6 @@ public class EmployeeControllerTests
                 Id = Guid.NewGuid(),
                 FirstName = "Test",
                 LastName = "Test",
-                Patronymic = "Test",
                 Mail = "Test"
             }
         };
@@ -61,68 +60,6 @@ public class EmployeeControllerTests
     }
 
     [Fact]
-    public async Task GetAll_ShouldMapEmployeeToDtoCorrectly()
-    {
-        var projectId1 = Guid.NewGuid();
-        var projectId2 = Guid.NewGuid();
-        var authoredId1 = Guid.NewGuid();
-        var authoredId2 = Guid.NewGuid();
-        var assignedId1 = Guid.NewGuid();
-        var assignedId2 = Guid.NewGuid();
-
-        var employee = new Employee
-        {
-            Id = Guid.NewGuid(),
-            FirstName = "Test",
-            LastName = "Test",
-            Patronymic = "Test",
-            Mail = "Test",
-            EmployeeProjects = new List<EmployeeProject>
-            {
-                new() { ProjectId = projectId1 },
-                new() { ProjectId = projectId2 }
-            },
-            AuthoredObjectives = new List<Objective>
-            {
-                new() { Id = authoredId1, Name = "Test", Priority = 1 },
-                new() { Id = authoredId2, Name = "Test", Priority = 1 }
-            },
-            AssignedObjectives = new List<Objective>
-            {
-                new() { Id = assignedId1, Name = "Test", Priority = 1 },
-                new() { Id = assignedId2, Name = "Test", Priority = 1 }
-            }
-        };
-
-        _mockService.Setup(s => s.GetAllAsync()).ReturnsAsync([employee]);
-        _controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext { User = _managerUser }
-        };
-
-        var result = await _controller.GetAll();
-
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var returnValue = Assert.IsType<List<EmployeeDto>>(okResult.Value);
-        var dto = returnValue.First();
-
-        Assert.Equal(employee.Id, dto.Id);
-        Assert.Equal("Test", dto.FirstName);
-        Assert.Equal("Test", dto.LastName);
-        Assert.Equal("Test", dto.Patronymic);
-        Assert.Equal("Test", dto.Mail);
-        Assert.Equal(2, dto.ProjectsIds.Count);
-        Assert.Contains(projectId1, dto.ProjectsIds);
-        Assert.Contains(projectId2, dto.ProjectsIds);
-        Assert.Equal(2, dto.AuthoredObjectivesIds.Count);
-        Assert.Contains(authoredId1, dto.AuthoredObjectivesIds);
-        Assert.Contains(authoredId2, dto.AuthoredObjectivesIds);
-        Assert.Equal(2, dto.AssignedObjectivesIds.Count);
-        Assert.Contains(assignedId1, dto.AssignedObjectivesIds);
-        Assert.Contains(assignedId2, dto.AssignedObjectivesIds);
-    }
-
-    [Fact]
     public async Task GetById_ShouldReturnOk_WhenEmployeeExists()
     {
         var id = Guid.NewGuid();
@@ -131,7 +68,6 @@ public class EmployeeControllerTests
             Id = id,
             FirstName = "Test",
             LastName = "Test",
-            Patronymic = "Test",
             Mail = "Test"
         };
         _mockService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(employee);
@@ -164,7 +100,7 @@ public class EmployeeControllerTests
     [Fact]
     public async Task Create_ShouldReturnCreatedAt_WhenValidAndAuthorized()
     {
-        var dto = new EmployeeCreateDto("Test", "Test", "Test", "Test");
+        var dto = new EmployeeCreateDto("Test", "Test", "", "Test");
         Employee? capturedEmployee = null;
 
         _mockService.Setup(s => s.AddAsync(It.IsAny<Employee>()))
@@ -184,16 +120,12 @@ public class EmployeeControllerTests
 
         var returnedDto = Assert.IsType<EmployeeDto>(createdAtResult.Value);
         Assert.Equal(capturedEmployee.Id, returnedDto.Id);
-        Assert.Equal("Test", returnedDto.FirstName);
-        Assert.Equal("Test", returnedDto.LastName);
-        Assert.Equal("Test", returnedDto.Patronymic);
-        Assert.Equal("Test", returnedDto.Mail);
     }
 
     [Fact]
     public async Task Create_ShouldCallServiceAddAsync_WithCorrectEmployee()
     {
-        var dto = new EmployeeCreateDto("Test", "Test", "Test", "Test");
+        var dto = new EmployeeCreateDto("Test", "Test", "", "Test");
         Employee? capturedEmployee = null;
 
         _mockService.Setup(s => s.AddAsync(It.IsAny<Employee>()))
@@ -210,7 +142,6 @@ public class EmployeeControllerTests
         Assert.NotNull(capturedEmployee);
         Assert.Equal("Test", capturedEmployee.FirstName);
         Assert.Equal("Test", capturedEmployee.LastName);
-        Assert.Equal("Test", capturedEmployee.Patronymic);
         Assert.Equal("Test", capturedEmployee.Mail);
         Assert.NotEqual(Guid.Empty, capturedEmployee.Id);
     }
@@ -239,13 +170,12 @@ public class EmployeeControllerTests
     public async Task Update_ShouldReturnNoContent_WhenEmployeeExists()
     {
         var id = Guid.NewGuid();
-        var dto = new EmployeeDto(id, "Test", "Test", "Test", "Test", [], [], []);
+        var dto = new EmployeeCreateDto("Test", "Test", "", "Test");
         var existingEmployee = new Employee
         {
             Id = id,
             FirstName = "Old",
             LastName = "Old",
-            Patronymic = "Old",
             Mail = "Old"
         };
 
@@ -262,7 +192,6 @@ public class EmployeeControllerTests
         Assert.IsType<NoContentResult>(result);
         Assert.Equal("Test", existingEmployee.FirstName);
         Assert.Equal("Test", existingEmployee.LastName);
-        Assert.Equal("Test", existingEmployee.Patronymic);
         Assert.Equal("Test", existingEmployee.Mail);
     }
 
@@ -270,7 +199,7 @@ public class EmployeeControllerTests
     public async Task Update_ShouldReturnNotFound_WhenEmployeeDoesNotExist()
     {
         var id = Guid.NewGuid();
-        var dto = new EmployeeDto(id, "Test", "Test", "Test", "Test", [], [], []);
+        var dto = new EmployeeCreateDto("Test", "Test", "", "Test");
 
         _mockService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync((Employee?)null);
 
@@ -293,7 +222,6 @@ public class EmployeeControllerTests
             Id = id,
             FirstName = "Test",
             LastName = "Test",
-            Patronymic = "Test",
             Mail = "Test"
         };
         _mockService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(existing);

@@ -29,13 +29,36 @@ public class ObjectiveServiceTests
         {
             new() { Id = Guid.NewGuid(), Name = "Test", Priority = 1, Status = Status.ToDo }
         };
-        _mockObjectiveRepo.Setup(r => r.GetAllAsync(statuses, priorities, sortBy, isAsc))
-            .ReturnsAsync(objectives);
+        _mockObjectiveRepo.Setup(r => r.GetAllAsync(
+                null, 
+                statuses, 
+                priorities, 
+                null, 
+                null, 
+                null, 
+                sortBy, 
+                isAsc)).ReturnsAsync(objectives);
 
-        var result = await _service.GetAllAsync(statuses, priorities, sortBy, isAsc);
+        var result = await _service.GetAllAsync(
+            null, 
+            statuses, 
+            priorities, 
+            null, 
+            null, 
+            null, 
+            sortBy, 
+            isAsc);
 
         Assert.Single(result);
-        _mockObjectiveRepo.Verify(r => r.GetAllAsync(statuses, priorities, sortBy, isAsc), Times.Once);
+        _mockObjectiveRepo.Verify(r => r.GetAllAsync(
+            null, 
+            statuses, 
+            priorities, 
+            null, 
+            null, 
+            null, 
+            sortBy, 
+            isAsc), Times.Once);
     }
 
     [Fact]
@@ -224,7 +247,17 @@ public class ObjectiveServiceTests
         var employeeId = Guid.NewGuid();
         var projectId = Guid.NewGuid();
         var objective = new Objective { Id = objectiveId, Name = "Test", Priority = 1, Status = Status.ToDo, ProjectId = projectId };
-        var project = new Project { Id = projectId, DirectorId = employeeId, Name = "Test", CustomerName = "Test", ExecutorName = "Test", StartTime = DateTime.Now, EndTime = DateTime.Now.AddDays(1), Priority = 1 };
+        var project = new Project
+        {
+            Id = projectId, 
+            DirectorId = employeeId, 
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            StartTime = DateTime.Now, 
+            EndTime = DateTime.Now.AddDays(1), 
+            Priority = 1
+        };
 
         _mockObjectiveRepo.Setup(r => r.GetByIdAsync(objectiveId)).ReturnsAsync(objective);
         _mockProjectRepo.Setup(r => r.GetByIdAsync(projectId)).ReturnsAsync(project);
@@ -256,7 +289,17 @@ public class ObjectiveServiceTests
         var otherEmployeeId = Guid.NewGuid();
         var projectId = Guid.NewGuid();
         var objective = new Objective { Id = objectiveId, Name = "Test", Priority = 1, Status = Status.ToDo, ExecutorId = otherEmployeeId, ProjectId = projectId };
-        var project = new Project { Id = projectId, DirectorId = otherEmployeeId, Name = "Test", CustomerName = "Test", ExecutorName = "Test", StartTime = DateTime.Now, EndTime = DateTime.Now.AddDays(1), Priority = 1 };
+        var project = new Project
+        {
+            Id = projectId, 
+            DirectorId = otherEmployeeId, 
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            StartTime = DateTime.Now, 
+            EndTime = DateTime.Now.AddDays(1), 
+            Priority = 1
+        };
 
         _mockObjectiveRepo.Setup(r => r.GetByIdAsync(objectiveId)).ReturnsAsync(objective);
         _mockProjectRepo.Setup(r => r.GetByIdAsync(projectId)).ReturnsAsync(project);

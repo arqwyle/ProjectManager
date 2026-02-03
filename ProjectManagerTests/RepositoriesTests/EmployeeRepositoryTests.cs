@@ -39,7 +39,6 @@ public class EmployeeRepositoryTests
             UserId = "1",
             FirstName = "Test",
             LastName = "Test",
-            Patronymic = "Test",
             Mail = "Test"
         };
 
@@ -97,7 +96,6 @@ public class EmployeeRepositoryTests
         Assert.Equal("1", employee.UserId);
         Assert.Equal("Test", employee.FirstName);
         Assert.Equal("Test", employee.LastName);
-        Assert.Equal("Test", employee.Patronymic);
         Assert.Equal("Test", employee.Mail);
         Assert.Single(employee.EmployeeProjects);
         Assert.Equal(_projectId, employee.EmployeeProjects.First().ProjectId);
@@ -147,7 +145,6 @@ public class EmployeeRepositoryTests
             UserId = "2",
             FirstName = "Test",
             LastName = "Test",
-            Patronymic = "Test",
             Mail = "Test"
         };
 

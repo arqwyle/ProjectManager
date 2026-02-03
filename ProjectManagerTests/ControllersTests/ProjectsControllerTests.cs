@@ -63,8 +63,16 @@ public class ProjectControllerTests
                 DirectorId = Guid.NewGuid()
             }
         };
-        _mockProjectService.Setup(s => s.GetAllAsync(null, null, null, null, null, null, true))
-            .ReturnsAsync(projects);
+        _mockProjectService.Setup(s => s.GetAllAsync(
+                null, 
+                null, 
+                null, 
+                null, 
+                null, 
+                null, 
+                null, 
+                null, 
+                true)).ReturnsAsync(projects);
         _controller.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext { User = _directorUser }
@@ -125,7 +133,14 @@ public class ProjectControllerTests
     {
         var empId1 = Guid.NewGuid();
         var empId2 = Guid.NewGuid();
-        var dto = new ProjectCreateDto("Test", "Test", "Test", DateTime.Now, DateTime.Now.AddDays(1), 1, Guid.NewGuid(),
+        var dto = new ProjectCreateDto(
+            "Test", 
+            "Test", 
+            "Test", 
+            DateTime.Now, 
+            DateTime.Now.AddDays(1), 
+            1, 
+            Guid.NewGuid(), 
             [empId1, empId2]);
         Project? capturedProject = null;
 
@@ -160,7 +175,15 @@ public class ProjectControllerTests
         };
         _controller.ModelState.AddModelError("Name", "Required");
 
-        var dto = new ProjectCreateDto("", "Test", "Test", DateTime.Now, DateTime.Now.AddDays(1), 1, Guid.NewGuid(), []);
+        var dto = new ProjectCreateDto(
+            "", 
+            "Test", 
+            "Test", 
+            DateTime.Now, 
+            DateTime.Now.AddDays(1), 
+            1, 
+            Guid.NewGuid(), 
+            []);
 
         var result = await _controller.Create(dto);
 
@@ -173,7 +196,15 @@ public class ProjectControllerTests
     {
         var id = Guid.NewGuid();
         var empIds = new List<Guid> { Guid.NewGuid(), Guid.NewGuid() };
-        var dto = new ProjectDto(id, "Test", "Test", "Test", DateTime.Now, DateTime.Now.AddDays(1), 1, Guid.NewGuid(), empIds, []);
+        var dto = new ProjectCreateDto(
+            "Test", 
+            "Test", 
+            "Test", 
+            DateTime.Now, 
+            DateTime.Now.AddDays(1), 
+            1, 
+            Guid.NewGuid(), 
+            empIds);
         var existing = new Project
         {
             Id = id,
@@ -213,7 +244,15 @@ public class ProjectControllerTests
     public async Task Update_ShouldReturnNotFound_WhenProjectDoesNotExist()
     {
         var id = Guid.NewGuid();
-        var dto = new ProjectDto(id, "Test", "Test", "Test", DateTime.Now, DateTime.Now.AddDays(1), 1, Guid.NewGuid(), [], []);
+        var dto = new ProjectCreateDto(
+            "Test", 
+            "Test", 
+            "Test", 
+            DateTime.Now, 
+            DateTime.Now.AddDays(1), 
+            1, 
+            Guid.NewGuid(), 
+            []);
         _mockProjectService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync((Project?)null);
 
         _controller.ControllerContext = new ControllerContext
@@ -332,7 +371,6 @@ public class ProjectControllerTests
             Id = employeeId,
             FirstName = "Test",
             LastName = "Test",
-            Patronymic = "Test",
             Mail = "Test"
         };
 
@@ -422,7 +460,6 @@ public class ProjectControllerTests
             Id = employeeId,
             FirstName = "Test",
             LastName = "Test",
-            Patronymic = "Test",
             Mail = "Test"
         };
 

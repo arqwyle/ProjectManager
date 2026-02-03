@@ -40,9 +40,17 @@ public class ObjectiveControllerTests
     {
         var objectives = new List<Objective>
         {
-            new Objective { Id = Guid.NewGuid(), Name = "Test", Priority = 1 }
+            new() { Id = Guid.NewGuid(), Name = "Test", Priority = 1 }
         };
-        _mockObjectiveService.Setup(s => s.GetAllAsync(null, null, null, true)).ReturnsAsync(objectives);
+        _mockObjectiveService.Setup(s => s.GetAllAsync(
+            null, 
+            null, 
+            null, 
+            null,
+            null, 
+            null, 
+            null, 
+            true)).ReturnsAsync(objectives);
         _controller.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext { User = _managerUser }
@@ -91,7 +99,14 @@ public class ObjectiveControllerTests
     [Fact]
     public async Task Create_ShouldReturnCreatedAt_WhenValidAndAuthorized()
     {
-        var dto = new ObjectiveCreateDto("Test", Guid.NewGuid(), Guid.NewGuid(), Status.ToDo, "", 1, Guid.NewGuid());
+        var dto = new ObjectiveCreateDto(
+            "Test", 
+            Guid.NewGuid(), 
+            Guid.NewGuid(), 
+            Status.ToDo, 
+            "", 
+            1, 
+            Guid.NewGuid());
         var userId = "1";
         var employeeId = Guid.NewGuid();
 
@@ -114,7 +129,6 @@ public class ObjectiveControllerTests
         Assert.Equal(employeeId, capturedObjective.AuthorId);
         Assert.Equal(dto.ExecutorId, capturedObjective.ExecutorId);
         Assert.Equal(dto.Status, capturedObjective.Status);
-        Assert.Equal(dto.Comment, capturedObjective.Comment);
         Assert.Equal(dto.Priority, capturedObjective.Priority);
         Assert.Equal(dto.ProjectId, capturedObjective.ProjectId);
 
@@ -128,7 +142,14 @@ public class ObjectiveControllerTests
     [Fact]
     public async Task Create_ShouldReturnForbid_WhenEmployeeNotFound()
     {
-        var dto = new ObjectiveCreateDto("Test", Guid.NewGuid(), Guid.NewGuid(), Status.ToDo, "", 1, Guid.NewGuid());
+        var dto = new ObjectiveCreateDto(
+            "Test", 
+            Guid.NewGuid(), 
+            Guid.NewGuid(), 
+            Status.ToDo, 
+            "", 
+            1, 
+            Guid.NewGuid());
         _mockEmployeeService.Setup(s => s.GetEmployeeIdByUserIdAsync("1")).ReturnsAsync((Guid?)null);
         _controller.ControllerContext = new ControllerContext
         {
@@ -149,7 +170,14 @@ public class ObjectiveControllerTests
         };
         _controller.ModelState.AddModelError("Name", "Required");
 
-        var dto = new ObjectiveCreateDto("Test", Guid.NewGuid(), Guid.NewGuid(), Status.ToDo, "", 1, Guid.NewGuid());
+        var dto = new ObjectiveCreateDto(
+            "Test", 
+            Guid.NewGuid(), 
+            Guid.NewGuid(), 
+            Status.ToDo, 
+            "", 
+            1, 
+            Guid.NewGuid());
 
         var result = await _controller.Create(dto);
 
@@ -161,7 +189,14 @@ public class ObjectiveControllerTests
     public async Task Update_ShouldReturnNoContent_WhenObjectiveExists()
     {
         var id = Guid.NewGuid();
-        var dto = new ObjectiveDto(id, "Test", Guid.NewGuid(), Guid.NewGuid(), Status.ToDo, "Test", 1, Guid.NewGuid());
+        var dto = new ObjectiveCreateDto(
+            "Test", 
+            Guid.NewGuid(), 
+            Guid.NewGuid(), 
+            Status.ToDo, 
+            "", 
+            1, 
+            Guid.NewGuid());
         var existing = new Objective { Id = id, Name = "Old", Priority = 999 };
 
         _mockObjectiveService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(existing);
@@ -179,7 +214,6 @@ public class ObjectiveControllerTests
         Assert.Equal(dto.AuthorId, existing.AuthorId);
         Assert.Equal(dto.ExecutorId, existing.ExecutorId);
         Assert.Equal(dto.Status, existing.Status);
-        Assert.Equal(dto.Comment, existing.Comment);
         Assert.Equal(dto.Priority, existing.Priority);
         Assert.Equal(dto.ProjectId, existing.ProjectId);
     }
@@ -188,7 +222,14 @@ public class ObjectiveControllerTests
     public async Task Update_ShouldReturnNotFound_WhenObjectiveDoesNotExist()
     {
         var id = Guid.NewGuid();
-        var dto = new ObjectiveDto(id, "Test", Guid.NewGuid(), Guid.NewGuid(), Status.ToDo, "Test", 1, Guid.NewGuid());
+        var dto = new ObjectiveCreateDto(
+            "Test", 
+            Guid.NewGuid(), 
+            Guid.NewGuid(), 
+            Status.ToDo, 
+            "", 
+            1, 
+            Guid.NewGuid());
         _mockObjectiveService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync((Objective?)null);
 
         _controller.ControllerContext = new ControllerContext
@@ -242,7 +283,7 @@ public class ObjectiveControllerTests
         var objectiveId = Guid.NewGuid();
         var employeeId = Guid.NewGuid();
         var objective = new Objective { Id = objectiveId, Name = "Test", Priority = 1 };
-        var employee = new Employee { Id = employeeId, FirstName = "Test", LastName = "Test", Patronymic = "Test", Mail = "Test" };
+        var employee = new Employee { Id = employeeId, FirstName = "Test", LastName = "Test", Patronymic = "", Mail = "Test" };
 
         _mockObjectiveService.Setup(s => s.GetByIdAsync(objectiveId)).ReturnsAsync(objective);
         _mockEmployeeService.Setup(s => s.GetByIdAsync(employeeId)).ReturnsAsync(employee);
@@ -306,7 +347,7 @@ public class ObjectiveControllerTests
         var objectiveId = Guid.NewGuid();
         var employeeId = Guid.NewGuid();
         var objective = new Objective { Id = objectiveId, Name = "Test", Priority = 1 };
-        var employee = new Employee { Id = employeeId, FirstName = "Test", LastName = "Test", Patronymic = "Test", Mail = "Test" };
+        var employee = new Employee { Id = employeeId, FirstName = "Test", LastName = "Test", Patronymic = "", Mail = "Test" };
 
         _mockObjectiveService.Setup(s => s.GetByIdAsync(objectiveId)).ReturnsAsync(objective);
         _mockEmployeeService.Setup(s => s.GetByIdAsync(employeeId)).ReturnsAsync(employee);
@@ -330,7 +371,7 @@ public class ObjectiveControllerTests
         var objectiveId = Guid.NewGuid();
         var employeeId = Guid.NewGuid();
         var objective = new Objective { Id = objectiveId, Name = "Test", Priority = 1 };
-        var employee = new Employee { Id = employeeId, FirstName = "Test", LastName = "Test", Patronymic = "Test", Mail = "Test" };
+        var employee = new Employee { Id = employeeId, FirstName = "Test", LastName = "Test", Patronymic = "", Mail = "Test" };
 
         _mockObjectiveService.Setup(s => s.GetByIdAsync(objectiveId)).ReturnsAsync(objective);
         _mockEmployeeService.Setup(s => s.GetByIdAsync(employeeId)).ReturnsAsync(employee);

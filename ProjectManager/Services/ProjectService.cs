@@ -7,14 +7,25 @@ namespace ProjectManager.Services;
 public class ProjectService(IProjectRepository projectRepository) : IProjectService
 {
     public async Task<List<Project>> GetAllAsync(
+        string? name = null,
         string? customerName = null,
         string? executorName = null,
         DateTime? startTimeFrom = null,
         DateTime? startTimeTo = null,
         List<int>? priorities = null,
+        Guid? directorId = null,
         string? sortBy = null,
         bool isSortAscending = true)
-        => await projectRepository.GetAllAsync(customerName, executorName, startTimeFrom, startTimeTo, priorities, sortBy, isSortAscending);
+        => await projectRepository.GetAllAsync(
+            name,
+            customerName, 
+            executorName, 
+            startTimeFrom, 
+            startTimeTo, 
+            priorities, 
+            directorId, 
+            sortBy, 
+            isSortAscending);
 
     public async Task<Project?> GetByIdAsync(Guid id)
         => await projectRepository.GetByIdAsync(id);

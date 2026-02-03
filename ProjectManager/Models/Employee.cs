@@ -13,7 +13,7 @@ public class Employee : BaseModel
     public required string LastName { get; set; }
     
     [MaxLength(256)]
-    public required string Patronymic { get; set; }
+    public string? Patronymic { get; set; }
     
     [MaxLength(256)]
     public required string Mail { get; set; }

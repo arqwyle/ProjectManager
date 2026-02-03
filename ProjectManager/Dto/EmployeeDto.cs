@@ -6,7 +6,7 @@ public record EmployeeDto(
     [Required] Guid Id,
     [Required] string FirstName,
     [Required] string LastName,
-    [Required] string Patronymic,
+    string? Patronymic,
     [Required] string Mail,
     List<Guid> ProjectsIds,
     List<Guid> AuthoredObjectivesIds,

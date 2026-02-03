@@ -28,13 +28,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             .HasOne(ep => ep.Employee)
             .WithMany(e => e.EmployeeProjects)
             .HasForeignKey(ep => ep.EmployeeId)
-            .OnDelete(DeleteBehavior.ClientSetNull);
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<EmployeeProject>()
             .HasOne(ep => ep.Project)
             .WithMany(p => p.EmployeeProjects)
             .HasForeignKey(ep => ep.ProjectId)
-            .OnDelete(DeleteBehavior.ClientSetNull);
+            .OnDelete(DeleteBehavior.Cascade);
         
         modelBuilder.Entity<Project>()
             .HasOne(p => p.Director)

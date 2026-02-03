@@ -9,11 +9,23 @@ public class ObjectiveService(
     IProjectRepository projectRepository) : IObjectiveService
 {
     public async Task<List<Objective>> GetAllAsync(
+        string? name = null,
         List<Status>? statuses = null,
         List<int>? priorities = null,
+        Guid? authorId = null,
+        Guid? executorId = null,
+        Guid? projectId = null,
         string? sortBy = null,
         bool isSortAscending = true)
-        => await objectiveRepository.GetAllAsync(statuses, priorities, sortBy, isSortAscending);
+        => await objectiveRepository.GetAllAsync(
+            name,
+            statuses, 
+            priorities, 
+            authorId, 
+            executorId, 
+            projectId, 
+            sortBy, 
+            isSortAscending);
 
     public async Task<Objective?> GetByIdAsync(Guid id)
         => await objectiveRepository.GetByIdAsync(id);

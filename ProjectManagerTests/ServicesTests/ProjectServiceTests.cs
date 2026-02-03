@@ -28,22 +28,68 @@ public class ProjectServiceTests
         var isAsc = true;
         var projects = new List<Project>
         {
-            new() { Id = Guid.NewGuid(), Name = "Test", CustomerName = "Test", ExecutorName = "Test", StartTime = DateTime.Now, EndTime = DateTime.Now.AddDays(1), Priority = 1, DirectorId = Guid.NewGuid() }
+            new()
+            {
+                Id = Guid.NewGuid(), 
+                Name = "Test", 
+                CustomerName = "Test", 
+                ExecutorName = "Test", 
+                StartTime = DateTime.Now, 
+                EndTime = DateTime.Now.AddDays(1), 
+                Priority = 1, 
+                DirectorId = Guid.NewGuid()
+            }
         };
-        _mockRepository.Setup(r => r.GetAllAsync(customerName, executorName, startTimeFrom, startTimeTo, priorities, sortBy, isAsc))
-            .ReturnsAsync(projects);
+        _mockRepository.Setup(r => r.GetAllAsync(
+                null, 
+                customerName, 
+                executorName, 
+                startTimeFrom, 
+                startTimeTo, 
+                priorities, 
+                null, 
+                sortBy, 
+                isAsc)).ReturnsAsync(projects);
 
-        var result = await _service.GetAllAsync(customerName, executorName, startTimeFrom, startTimeTo, priorities, sortBy, isAsc);
+        var result = await _service.GetAllAsync(
+            null, 
+            customerName, 
+            executorName, 
+            startTimeFrom, 
+            startTimeTo, 
+            priorities, 
+            null, 
+            sortBy, 
+            isAsc);
 
         Assert.Single(result);
-        _mockRepository.Verify(r => r.GetAllAsync(customerName, executorName, startTimeFrom, startTimeTo, priorities, sortBy, isAsc), Times.Once);
+        _mockRepository.Verify(r => r.GetAllAsync(
+            null, 
+            customerName, 
+            executorName, 
+            startTimeFrom, 
+            startTimeTo, 
+            priorities, 
+            null, 
+            sortBy, 
+            isAsc), Times.Once);
     }
 
     [Fact]
     public async Task GetByIdAsync_ShouldReturnProjectFromRepository()
     {
         var id = Guid.NewGuid();
-        var project = new Project { Id = id, Name = "Test", CustomerName = "Test", ExecutorName = "Test", StartTime = DateTime.Now, EndTime = DateTime.Now.AddDays(1), Priority = 1, DirectorId = Guid.NewGuid() };
+        var project = new Project
+        {
+            Id = id, 
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            StartTime = DateTime.Now, 
+            EndTime = DateTime.Now.AddDays(1), 
+            Priority = 1, 
+            DirectorId = Guid.NewGuid()
+        };
         _mockRepository.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(project);
 
         var result = await _service.GetByIdAsync(id);
@@ -68,7 +114,17 @@ public class ProjectServiceTests
     [Fact]
     public async Task AddAsync_ShouldCallRepositoryAddAsync()
     {
-        var project = new Project { Id = Guid.NewGuid(), Name = "Test", CustomerName = "Test", ExecutorName = "Test", StartTime = DateTime.Now, EndTime = DateTime.Now.AddDays(1), Priority = 1, DirectorId = Guid.NewGuid() };
+        var project = new Project
+        {
+            Id = Guid.NewGuid(), 
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            StartTime = DateTime.Now, 
+            EndTime = DateTime.Now.AddDays(1), 
+            Priority = 1, 
+            DirectorId = Guid.NewGuid()
+        };
 
         await _service.AddAsync(project);
 
@@ -78,7 +134,17 @@ public class ProjectServiceTests
     [Fact]
     public async Task UpdateAsync_ShouldCallRepositoryUpdateAsync()
     {
-        var project = new Project { Id = Guid.NewGuid(), Name = "Test", CustomerName = "Test", ExecutorName = "Test", StartTime = DateTime.Now, EndTime = DateTime.Now.AddDays(1), Priority = 1, DirectorId = Guid.NewGuid() };
+        var project = new Project
+        {
+            Id = Guid.NewGuid(), 
+            Name = "Test", 
+            CustomerName = "Test", 
+            ExecutorName = "Test", 
+            StartTime = DateTime.Now, 
+            EndTime = DateTime.Now.AddDays(1), 
+            Priority = 1, 
+            DirectorId = Guid.NewGuid()
+        };
 
         await _service.UpdateAsync(project);
 
@@ -156,7 +222,17 @@ public class ProjectServiceTests
         var employeeId = Guid.NewGuid();
         var projects = new List<Project>
         {
-            new() { Id = Guid.NewGuid(), Name = "Test", CustomerName = "Test", ExecutorName = "Test", StartTime = DateTime.Now, EndTime = DateTime.Now.AddDays(1), Priority = 1, DirectorId = employeeId }
+            new()
+            {
+                Id = Guid.NewGuid(), 
+                Name = "Test", 
+                CustomerName = "Test", 
+                ExecutorName = "Test", 
+                StartTime = DateTime.Now, 
+                EndTime = DateTime.Now.AddDays(1), 
+                Priority = 1, 
+                DirectorId = employeeId
+            }
         };
         _mockRepository.Setup(r => r.GetProjectsByDirectorIdAsync(employeeId))
             .ReturnsAsync(projects);
@@ -173,7 +249,17 @@ public class ProjectServiceTests
         var employeeId = Guid.NewGuid();
         var projects = new List<Project>
         {
-            new() { Id = Guid.NewGuid(), Name = "Test", CustomerName = "Test", ExecutorName = "Test", StartTime = DateTime.Now, EndTime = DateTime.Now.AddDays(1), Priority = 1, DirectorId = Guid.NewGuid() }
+            new()
+            {
+                Id = Guid.NewGuid(), 
+                Name = "Test", 
+                CustomerName = "Test", 
+                ExecutorName = "Test", 
+                StartTime = DateTime.Now, 
+                EndTime = DateTime.Now.AddDays(1), 
+                Priority = 1, 
+                DirectorId = Guid.NewGuid()
+            }
         };
         _mockRepository.Setup(r => r.GetProjectsByEmployeeIdAsync(employeeId))
             .ReturnsAsync(projects);

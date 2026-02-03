@@ -70,7 +70,7 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
     
     [Authorize(Roles = "director")]
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, EmployeeDto dto)
+    public async Task<IActionResult> Update(Guid id, EmployeeCreateDto dto)
     {
         var employee = await service.GetByIdAsync(id);
         if (employee == null)

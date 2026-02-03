@@ -21,8 +21,22 @@ public class EmployeeServiceTests
     {
         var employees = new List<Employee>
         {
-            new() { Id = Guid.NewGuid(), UserId = "1", FirstName = "Test", LastName = "Test", Patronymic = "Test", Mail = "Test" },
-            new() { Id = Guid.NewGuid(), UserId = "2", FirstName = "Test", LastName = "Test", Patronymic = "Test", Mail = "Test" }
+            new()
+            {
+                Id = Guid.NewGuid(), 
+                UserId = "1", 
+                FirstName = "Test", 
+                LastName = "Test", 
+                Mail = "Test"
+            },
+            new()
+            {
+                Id = Guid.NewGuid(), 
+                UserId = "2", 
+                FirstName = "Test", 
+                LastName = "Test", 
+                Mail = "Test"
+            }
         };
         _mockRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(employees);
 
@@ -36,7 +50,13 @@ public class EmployeeServiceTests
     public async Task GetByIdAsync_ShouldReturnEmployeeFromRepository()
     {
         var id = Guid.NewGuid();
-        var employee = new Employee { Id = id, UserId = "1", FirstName = "Test", LastName = "Test", Patronymic = "Test", Mail = "Test" };
+        var employee = new Employee
+        {
+            Id = id, UserId = "1", 
+            FirstName = "Test", 
+            LastName = "Test", 
+            Mail = "Test"
+        };
         _mockRepository.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(employee);
 
         var result = await _service.GetByIdAsync(id);
@@ -61,7 +81,14 @@ public class EmployeeServiceTests
     [Fact]
     public async Task AddAsync_ShouldCallRepositoryAddAsync()
     {
-        var employee = new Employee { Id = Guid.NewGuid(), UserId = "1", FirstName = "Test", LastName = "Test", Patronymic = "Test", Mail = "Test" };
+        var employee = new Employee
+        {
+            Id = Guid.NewGuid(), 
+            UserId = "1", 
+            FirstName = "Test", 
+            LastName = "Test", 
+            Mail = "Test"
+        };
 
         await _service.AddAsync(employee);
 
@@ -71,7 +98,14 @@ public class EmployeeServiceTests
     [Fact]
     public async Task UpdateAsync_ShouldCallRepositoryUpdateAsync()
     {
-        var employee = new Employee { Id = Guid.NewGuid(), UserId = "1", FirstName = "Test", LastName = "Test", Patronymic = "Test", Mail = "Test" };
+        var employee = new Employee
+        {
+            Id = Guid.NewGuid(), 
+            UserId = "1", 
+            FirstName = "Test", 
+            LastName = "Test", 
+            Mail = "Test"
+        };
 
         await _service.UpdateAsync(employee);
 
