@@ -193,7 +193,7 @@ public class ObjectiveServiceTests
         var objective = new Objective { Id = objectiveId, Name = "Test", Priority = 1, Status = Status.ToDo };
         _mockObjectiveRepo.Setup(r => r.GetByIdAsync(objectiveId)).ReturnsAsync(objective);
 
-        var result = await _service.UpdateObjectiveStatusAsync(objectiveId, Status.Done, employeeId, true);
+        var result = await _service.UpdateObjectiveStatusAsync(objective, Status.Done, employeeId, true);
 
         Assert.True(result);
         _mockObjectiveRepo.Verify(r => r.UpdateAsync(objective), Times.Once);
@@ -208,7 +208,7 @@ public class ObjectiveServiceTests
         var objective = new Objective { Id = objectiveId, Name = "Test", Priority = 1, Status = Status.ToDo, ExecutorId = employeeId };
         _mockObjectiveRepo.Setup(r => r.GetByIdAsync(objectiveId)).ReturnsAsync(objective);
 
-        var result = await _service.UpdateObjectiveStatusAsync(objectiveId, Status.Done, employeeId, false);
+        var result = await _service.UpdateObjectiveStatusAsync(objective, Status.Done, employeeId, false);
 
         Assert.True(result);
         _mockObjectiveRepo.Verify(r => r.UpdateAsync(objective), Times.Once);
@@ -237,23 +237,11 @@ public class ObjectiveServiceTests
         _mockObjectiveRepo.Setup(r => r.GetByIdAsync(objectiveId)).ReturnsAsync(objective);
         _mockProjectRepo.Setup(r => r.GetByIdAsync(projectId)).ReturnsAsync(project);
 
-        var result = await _service.UpdateObjectiveStatusAsync(objectiveId, Status.Done, employeeId, false);
+        var result = await _service.UpdateObjectiveStatusAsync(objective, Status.Done, employeeId, false);
 
         Assert.True(result);
         _mockObjectiveRepo.Verify(r => r.UpdateAsync(objective), Times.Once);
         Assert.Equal(Status.Done, objective.Status);
-    }
-
-    [Fact]
-    public async Task UpdateObjectiveStatusAsync_ShouldReturnFalse_WhenObjectiveNotFound()
-    {
-        var objectiveId = Guid.NewGuid();
-        var employeeId = Guid.NewGuid();
-        _mockObjectiveRepo.Setup(r => r.GetByIdAsync(objectiveId)).ReturnsAsync((Objective?)null);
-
-        var result = await _service.UpdateObjectiveStatusAsync(objectiveId, Status.Done, employeeId, false);
-
-        Assert.False(result);
     }
 
     [Fact]
@@ -279,7 +267,7 @@ public class ObjectiveServiceTests
         _mockObjectiveRepo.Setup(r => r.GetByIdAsync(objectiveId)).ReturnsAsync(objective);
         _mockProjectRepo.Setup(r => r.GetByIdAsync(projectId)).ReturnsAsync(project);
 
-        var result = await _service.UpdateObjectiveStatusAsync(objectiveId, Status.Done, employeeId, false);
+        var result = await _service.UpdateObjectiveStatusAsync(objective, Status.Done, employeeId, false);
 
         Assert.False(result);
         _mockObjectiveRepo.Verify(r => r.UpdateAsync(It.IsAny<Objective>()), Times.Never);
@@ -296,7 +284,7 @@ public class ObjectiveServiceTests
         _mockObjectiveRepo.Setup(r => r.GetByIdAsync(objectiveId)).ReturnsAsync(objective);
         _mockProjectRepo.Setup(r => r.GetByIdAsync(projectId)).ReturnsAsync((Project?)null);
 
-        var result = await _service.UpdateObjectiveStatusAsync(objectiveId, Status.Done, employeeId, false);
+        var result = await _service.UpdateObjectiveStatusAsync(objective, Status.Done, employeeId, false);
 
         Assert.False(result);
     }

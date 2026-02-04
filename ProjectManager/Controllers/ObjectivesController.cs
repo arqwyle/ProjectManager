@@ -162,7 +162,7 @@ public class ObjectivesController(
         var isDirector = User.IsInRole("director");
 
         var success = await objectiveService.UpdateObjectiveStatusAsync(
-            objectiveId, 
+            objective, 
             status, 
             employeeId.Value, 
             isDirector

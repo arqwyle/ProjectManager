@@ -20,5 +20,5 @@ public interface IObjectiveService
     Task<List<Objective>> GetEmployeeObjectivesAsync(Guid employeeId);
     Task<List<Objective>> GetObjectivesForManagerProjectsAsync(Guid employeeId);
     Task<bool> IsEmployeeInObjectiveProjectAsync(Objective objective, Guid employeeId);
-    Task<bool> UpdateObjectiveStatusAsync(Guid objectiveId, Status status, Guid employeeId, bool isDirector);
+    Task<bool> UpdateObjectiveStatusAsync(Objective objective, Status status, Guid employeeId, bool isDirector);
 }

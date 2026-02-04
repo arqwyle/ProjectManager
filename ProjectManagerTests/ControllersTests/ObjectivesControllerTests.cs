@@ -436,7 +436,7 @@ public class ObjectiveControllerTests
 
         _mockObjectiveService.Setup(s => s.GetByIdAsync(objectiveId)).ReturnsAsync(objective);
         _mockEmployeeService.Setup(s => s.GetEmployeeIdByUserIdAsync(userId)).ReturnsAsync(employeeId);
-        _mockObjectiveService.Setup(s => s.UpdateObjectiveStatusAsync(objectiveId, Status.Done, employeeId, false))
+        _mockObjectiveService.Setup(s => s.UpdateObjectiveStatusAsync(objective, Status.Done, employeeId, false))
             .ReturnsAsync(true);
 
         _controller.ControllerContext = new ControllerContext
@@ -459,7 +459,7 @@ public class ObjectiveControllerTests
 
         _mockObjectiveService.Setup(s => s.GetByIdAsync(objectiveId)).ReturnsAsync(objective);
         _mockEmployeeService.Setup(s => s.GetEmployeeIdByUserIdAsync(userId)).ReturnsAsync(employeeId);
-        _mockObjectiveService.Setup(s => s.UpdateObjectiveStatusAsync(objectiveId, Status.Done, employeeId, false))
+        _mockObjectiveService.Setup(s => s.UpdateObjectiveStatusAsync(objective, Status.Done, employeeId, false))
             .ReturnsAsync(false);
 
         _controller.ControllerContext = new ControllerContext
