@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ProjectManager.Dto;
 using ProjectManager.Mappers;
+using ProjectManager.Models;
 using ProjectManager.Services.Interfaces;
 
 namespace ProjectManager.Controllers;
@@ -14,7 +15,7 @@ public class ProjectsController(
     IEmployeeService employeeService, 
     IObjectiveService objectiveService) : ControllerBase
 {
-    [Authorize(Roles = "director")]
+    [Authorize(Roles = nameof(Role.Director))]
     [HttpGet]
     public async Task<ActionResult<List<ProjectDto>>> GetAll(
         [FromQuery] string? name = null,
@@ -40,7 +41,7 @@ public class ProjectsController(
         return Ok(projects.Select(ProjectMapper.ToDto).ToList());
     }
     
-    [Authorize(Roles = "director")]
+    [Authorize(Roles = nameof(Role.Director))]
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ProjectDto>> GetById(Guid id)
     {
@@ -48,7 +49,7 @@ public class ProjectsController(
         return project == null ? NotFound() : Ok(ProjectMapper.ToDto(project));
     }
     
-    [Authorize(Roles = "director")]
+    [Authorize(Roles = nameof(Role.Director))]
     [HttpPost]
     public async Task<ActionResult<ProjectCreateDto>> Create(ProjectCreateDto dto)
     {
@@ -60,7 +61,7 @@ public class ProjectsController(
         return CreatedAtAction(nameof(GetById), new { id = project.Id }, dto);
     }
 
-    [Authorize(Roles = "director")]
+    [Authorize(Roles = nameof(Role.Director))]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, ProjectCreateDto dto)
     {
@@ -83,7 +84,7 @@ public class ProjectsController(
         return NoContent();
     }
 
-    [Authorize(Roles = "director")]
+    [Authorize(Roles = nameof(Role.Director))]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
@@ -95,7 +96,7 @@ public class ProjectsController(
         return NoContent();
     }
 
-    [Authorize(Policy = "RequireManagerOrAbove")]
+    [Authorize(Policy = nameof(Policy.ManagerOrAbove))]
     [HttpPost("{projectId:guid}/documents")]
     public async Task<IActionResult> UploadDocuments(Guid projectId, List<IFormFile>? files)
     {
@@ -120,7 +121,7 @@ public class ProjectsController(
         return Ok("Documents uploaded successfully");
     }
 
-    [Authorize(Policy = "RequireManagerOrAbove")]
+    [Authorize(Policy = nameof(Policy.ManagerOrAbove))]
     [HttpPost("{projectId:guid}/employees/{employeeId:guid}")]
     public async Task<IActionResult> AddEmployeeToProject(Guid projectId, Guid employeeId)
     {
@@ -136,7 +137,7 @@ public class ProjectsController(
         return NoContent();
     }
 
-    [Authorize(Policy = "RequireManagerOrAbove")]
+    [Authorize(Policy = nameof(Policy.ManagerOrAbove))]
     [HttpDelete("{projectId:guid}/employees/{employeeId:guid}")]
     public async Task<IActionResult> RemoveEmployeeFromProject(Guid projectId, Guid employeeId)
     {
@@ -152,7 +153,7 @@ public class ProjectsController(
         return NoContent();
     }
 
-    [Authorize(Policy = "RequireManagerOrAbove")]
+    [Authorize(Policy = nameof(Policy.ManagerOrAbove))]
     [HttpPost("{projectId:guid}/objectives/{objectiveId:guid}")]
     public async Task<IActionResult> AddObjectiveToProject(Guid projectId, Guid objectiveId)
     {
@@ -168,7 +169,7 @@ public class ProjectsController(
         return NoContent();
     }
     
-    [Authorize(Policy = "RequireManagerOrAbove")]
+    [Authorize(Policy = nameof(Policy.ManagerOrAbove))]
     [HttpDelete("{projectId:guid}/objectives/{objectiveId:guid}")]
     public async Task<IActionResult> RemoveObjectiveFromProject(Guid projectId, Guid objectiveId)
     {
@@ -184,7 +185,7 @@ public class ProjectsController(
         return NoContent();
     }
     
-    [Authorize(Policy = "RequireManagerOrAbove")]
+    [Authorize(Policy = nameof(Policy.ManagerOrAbove))]
     [HttpGet("my-projects")]
     public async Task<IActionResult> GetMyProjects()
     {
@@ -200,7 +201,7 @@ public class ProjectsController(
         return Ok(projects.Select(ProjectMapper.ToDto).ToList());
     }
     
-    [Authorize(Policy = "RequireEmployeeOrAbove")]
+    [Authorize(Policy = nameof(Policy.EmployeeOrAbove))]
     [HttpGet("assigned-projects")]
     public async Task<IActionResult> GetAssignedProjects()
     {

@@ -14,7 +14,7 @@ public class ObjectivesController(
     IObjectiveService objectiveService, 
     IEmployeeService employeeService) : ControllerBase
 {
-    [Authorize(Policy = "RequireManagerOrAbove")]
+    [Authorize(Policy = nameof(Policy.ManagerOrAbove))]
     [HttpGet]
     public async Task<ActionResult<List<ObjectiveDto>>> GetAll(
         [FromQuery] string? name = null,
@@ -38,7 +38,7 @@ public class ObjectivesController(
         return Ok(objectives.Select(ObjectiveMapper.ToDto).ToList());
     }
     
-    [Authorize(Policy = "RequireManagerOrAbove")]
+    [Authorize(Policy = nameof(Policy.ManagerOrAbove))]
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ObjectiveDto>> GetById(Guid id)
     {
@@ -49,7 +49,7 @@ public class ObjectivesController(
         return Ok(ObjectiveMapper.ToDto(objective));
     }
 
-    [Authorize(Policy = "RequireManagerOrAbove")]
+    [Authorize(Policy = nameof(Policy.ManagerOrAbove))]
     [HttpPost]
     public async Task<ActionResult<ObjectiveDto>> Create([FromBody] ObjectiveCreateDto dto)
     {
@@ -71,7 +71,7 @@ public class ObjectivesController(
         return CreatedAtAction(nameof(GetById), new { id = objective.Id }, dto);
     }
 
-    [Authorize(Policy = "RequireManagerOrAbove")]
+    [Authorize(Policy = nameof(Policy.ManagerOrAbove))]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, ObjectiveCreateDto dto)
     {
@@ -91,7 +91,7 @@ public class ObjectivesController(
         return NoContent();
     }
 
-    [Authorize(Policy = "RequireManagerOrAbove")]
+    [Authorize(Policy = nameof(Policy.ManagerOrAbove))]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
@@ -103,7 +103,7 @@ public class ObjectivesController(
         return NoContent();
     }
 
-    [Authorize(Policy = "RequireManagerOrAbove")]
+    [Authorize(Policy = nameof(Policy.ManagerOrAbove))]
     [HttpPost("{objectiveId:guid}/executor/{employeeId:guid}")]
     public async Task<IActionResult> AssignExecutor(Guid objectiveId, Guid employeeId)
     {
@@ -125,7 +125,7 @@ public class ObjectivesController(
         return NoContent();
     }
 
-    [Authorize(Policy = "RequireManagerOrAbove")]
+    [Authorize(Policy = nameof(Policy.ManagerOrAbove))]
     [HttpPut("{objectiveId:guid}/executor")]
     public async Task<IActionResult> UpdateExecutor(Guid objectiveId, Guid employeeId)
     {
@@ -143,35 +143,7 @@ public class ObjectivesController(
         return NoContent();
     }
 
-    [Authorize(Policy = "RequireEmployeeOrAbove")]
-    [HttpPatch("{objectiveId:guid}/update-status")]
-    public async Task<IActionResult> UpdateObjectiveStatus(Guid objectiveId, [FromBody] Status status)
-    {
-        var objective = await objectiveService.GetByIdAsync(objectiveId);
-        if (objective == null)
-            return NotFound("Objective not found");
-        
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userId))
-            return Forbid();
-
-        var employeeId = await employeeService.GetEmployeeIdByUserIdAsync(userId);
-        if (employeeId == null)
-            return Forbid();
-
-        var isDirector = User.IsInRole("director");
-
-        var success = await objectiveService.UpdateObjectiveStatusAsync(
-            objective, 
-            status, 
-            employeeId.Value, 
-            isDirector
-        );
-
-        return success ? NoContent() : Forbid();
-    }
-
-    [Authorize(Policy = "RequireManagerOrAbove")]
+    [Authorize(Policy = nameof(Policy.ManagerOrAbove))]
     [HttpGet("my-projects-objectives")]
     public async Task<IActionResult> GetObjectivesForManagerProjects()
     {
@@ -187,7 +159,35 @@ public class ObjectivesController(
         return Ok(objectives.Select(ObjectiveMapper.ToDto).ToList());
     }
 
-    [Authorize(Policy = "RequireEmployeeOrAbove")]
+    [Authorize(Policy = nameof(Policy.EmployeeOrAbove))]
+    [HttpPatch("{objectiveId:guid}/update-status")]
+    public async Task<IActionResult> UpdateObjectiveStatus(Guid objectiveId, [FromBody] Status status)
+    {
+        var objective = await objectiveService.GetByIdAsync(objectiveId);
+        if (objective == null)
+            return NotFound("Objective not found");
+        
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return Forbid();
+
+        var employeeId = await employeeService.GetEmployeeIdByUserIdAsync(userId);
+        if (employeeId == null)
+            return Forbid();
+
+        var isDirector = User.IsInRole(nameof(Role.Director));
+
+        var success = await objectiveService.UpdateObjectiveStatusAsync(
+            objective, 
+            status, 
+            employeeId.Value, 
+            isDirector
+        );
+
+        return success ? NoContent() : Forbid();
+    }
+
+    [Authorize(Policy = nameof(Policy.EmployeeOrAbove))]
     [HttpGet("assigned-objectives")]
     public async Task<IActionResult> GetAssignedObjectives()
     {

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using ProjectManager.Dto;
 using ProjectManager.Mappers;
+using ProjectManager.Models;
 using ProjectManager.Services.Interfaces;
 
 namespace ProjectManager.Controllers;
@@ -10,7 +11,7 @@ namespace ProjectManager.Controllers;
 [Route("api/[controller]")]
 public class EmployeesController(IEmployeeService service) : ControllerBase
 {
-    [Authorize(Policy = "RequireManagerOrAbove")]
+    [Authorize(Policy = nameof(Policy.ManagerOrAbove))]
     [HttpGet]
     public async Task<ActionResult<List<EmployeeDto>>> GetAll()
     {
@@ -18,7 +19,7 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
         return Ok(employees.Select(EmployeeMapper.ToDto).ToList());
     }
     
-    [Authorize(Policy = "RequireManagerOrAbove")]
+    [Authorize(Policy = nameof(Policy.ManagerOrAbove))]
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<EmployeeDto>> GetById(Guid id)
     {
@@ -29,7 +30,7 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
         return Ok(EmployeeMapper.ToDto(employee));
     }
     
-    [Authorize(Roles = "director")]
+    [Authorize(Roles = nameof(Role.Director))]
     [HttpPost]
     public async Task<ActionResult<EmployeeCreateDto>> Create(EmployeeCreateDto dto)
     {
@@ -43,7 +44,7 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = employee.Id }, dto);
     }
     
-    [Authorize(Roles = "director")]
+    [Authorize(Roles = nameof(Role.Director))]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, EmployeeCreateDto dto)
     {
@@ -61,7 +62,7 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
         return NoContent();
     }
     
-    [Authorize(Roles = "director")]
+    [Authorize(Roles = nameof(Role.Director))]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
