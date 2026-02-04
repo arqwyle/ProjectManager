@@ -19,6 +19,6 @@ public interface IObjectiveService
     Task DeleteAsync(Guid id);
     Task<List<Objective>> GetEmployeeObjectivesAsync(Guid employeeId);
     Task<List<Objective>> GetObjectivesForManagerProjectsAsync(Guid employeeId);
-    Task<bool> IsEmployeeInObjectiveProjectAsync(Guid objectiveId, Guid employeeId);
+    Task<bool> IsEmployeeInObjectiveProjectAsync(Objective objective, Guid employeeId);
     Task<bool> UpdateObjectiveStatusAsync(Guid objectiveId, Status status, Guid employeeId, bool isDirector);
 }

@@ -1,4 +1,5 @@
-﻿using ProjectManager.Models;
+﻿using ProjectManager.Dto;
+using ProjectManager.Models;
 
 namespace ProjectManager.Services.Interfaces;
 
@@ -15,7 +16,7 @@ public interface IProjectService
         string? sortBy = null,
         bool isSortAscending = true);
     Task<Project?> GetByIdAsync(Guid id);
-    Task AddAsync(Project project);
+    Task<Project> CreateProjectWithEmployeesAsync(ProjectCreateDto dto);
     Task UpdateAsync(Project project);
     Task DeleteAsync(Guid id);
     Task AddEmployeeToProjectAsync(Guid projectId, Guid employeeId);

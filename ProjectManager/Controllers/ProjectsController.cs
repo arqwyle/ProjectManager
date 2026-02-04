@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ProjectManager.Dto;
-using ProjectManager.Models;
+using ProjectManager.Mappers;
 using ProjectManager.Services.Interfaces;
 
 namespace ProjectManager.Controllers;
@@ -14,25 +14,6 @@ public class ProjectsController(
     IEmployeeService employeeService, 
     IObjectiveService objectiveService) : ControllerBase
 {
-    private static ProjectDto MapToDto(Project p)
-    {
-        var employeesIds = p.EmployeeProjects.Select(ep => ep.EmployeeId).ToList();
-        var objectivesIds = p.Objectives.Select(ep => ep.Id).ToList();
-        
-        return new ProjectDto(
-            p.Id,
-            p.Name,
-            p.CustomerName,
-            p.ExecutorName,
-            p.StartTime,
-            p.EndTime,
-            p.Priority,
-            p.DirectorId,
-            employeesIds,
-            objectivesIds
-        );
-    }
-
     [Authorize(Roles = "director")]
     [HttpGet]
     public async Task<ActionResult<List<ProjectDto>>> GetAll(
@@ -56,7 +37,7 @@ public class ProjectsController(
             directorId, 
             sortBy, 
             isSortAscending);
-        return Ok(projects.Select(MapToDto).ToList());
+        return Ok(projects.Select(ProjectMapper.ToDto).ToList());
     }
     
     [Authorize(Roles = "director")]
@@ -64,7 +45,7 @@ public class ProjectsController(
     public async Task<ActionResult<ProjectDto>> GetById(Guid id)
     {
         var project = await projectService.GetByIdAsync(id);
-        return project == null ? NotFound() : Ok(MapToDto(project));
+        return project == null ? NotFound() : Ok(ProjectMapper.ToDto(project));
     }
     
     [Authorize(Roles = "director")]
@@ -73,25 +54,10 @@ public class ProjectsController(
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
-        
-        var project = new Project
-        {
-            Id = Guid.NewGuid(),
-            Name = dto.Name,
-            CustomerName = dto.CustomerName,
-            ExecutorName = dto.ExecutorName,
-            StartTime = dto.StartTime,
-            EndTime = dto.EndTime,
-            Priority = dto.Priority,
-            DirectorId = dto.DirectorId
-        };
 
-        await projectService.AddAsync(project);
+        var project = await projectService.CreateProjectWithEmployeesAsync(dto);
 
-        foreach (var empId in dto.EmployeeIds)
-            await projectService.AddEmployeeToProjectAsync(project.Id, empId);
-
-        return CreatedAtAction(nameof(GetById), new { id = project.Id }, MapToDto(project));
+        return CreatedAtAction(nameof(GetById), new { id = project.Id }, dto);
     }
 
     [Authorize(Roles = "director")]
@@ -231,7 +197,7 @@ public class ProjectsController(
             return Forbid();
 
         var projects = await projectService.GetManagerProjectsAsync(employeeId.Value);
-        return Ok(projects.Select(MapToDto).ToList());
+        return Ok(projects.Select(ProjectMapper.ToDto).ToList());
     }
     
     [Authorize(Policy = "RequireEmployeeOrAbove")]
@@ -247,6 +213,6 @@ public class ProjectsController(
             return Forbid();
         
         var projects = await projectService.GetEmployeeProjectsAsync(employeeId.Value);
-        return Ok(projects.Select(MapToDto).ToList());
+        return Ok(projects.Select(ProjectMapper.ToDto).ToList());
     }
 }

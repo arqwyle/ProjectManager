@@ -64,10 +64,34 @@ public class ProjectRepository(AppDbContext context) : IProjectRepository
             .FirstOrDefaultAsync(p => p.Id == id);
     }
 
-    public async Task AddAsync(Project project)
+    public async Task<Project> CreateWithEmployeesAsync(Project project, List<Guid> employeeIds)
     {
-        await context.Projects.AddAsync(project);
-        await context.SaveChangesAsync();
+        await using var transaction = await context.Database.BeginTransactionAsync();
+
+        try
+        {
+            context.Projects.Add(project);
+            await context.SaveChangesAsync();
+
+            foreach (var empId in employeeIds)
+            {
+                context.EmployeeProjects.Add(new EmployeeProject
+                {
+                    ProjectId = project.Id,
+                    EmployeeId = empId
+                });
+            }
+
+            await context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return project;
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
     public async Task UpdateAsync(Project project)

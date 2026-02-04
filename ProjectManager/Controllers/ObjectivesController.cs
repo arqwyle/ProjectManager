@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ProjectManager.Dto;
+using ProjectManager.Mappers;
 using ProjectManager.Models;
 using ProjectManager.Services.Interfaces;
 
@@ -13,20 +14,6 @@ public class ObjectivesController(
     IObjectiveService objectiveService, 
     IEmployeeService employeeService) : ControllerBase
 {
-    private static ObjectiveDto MapToDto(Objective o)
-    {
-        return new ObjectiveDto(
-            o.Id,
-            o.Name,
-            o.AuthorId,
-            o.ExecutorId,
-            o.Status,
-            o.Comment,
-            o.Priority,
-            o.ProjectId
-        );
-    }
-    
     [Authorize(Policy = "RequireManagerOrAbove")]
     [HttpGet]
     public async Task<ActionResult<List<ObjectiveDto>>> GetAll(
@@ -48,7 +35,7 @@ public class ObjectivesController(
             projectId, 
             sortBy, 
             isSortAscending);
-        return Ok(objectives.Select(MapToDto).ToList());
+        return Ok(objectives.Select(ObjectiveMapper.ToDto).ToList());
     }
     
     [Authorize(Policy = "RequireManagerOrAbove")]
@@ -59,7 +46,7 @@ public class ObjectivesController(
         if (objective == null)
             return NotFound();
 
-        return Ok(MapToDto(objective));
+        return Ok(ObjectiveMapper.ToDto(objective));
     }
 
     [Authorize(Policy = "RequireManagerOrAbove")]
@@ -77,21 +64,11 @@ public class ObjectivesController(
         if (employeeId == null)
             return Forbid();
 
-        var objective = new Objective
-        {
-            Id = Guid.NewGuid(),
-            Name = dto.Name,
-            AuthorId = (Guid)employeeId,
-            ExecutorId = dto.ExecutorId,
-            Status = dto.Status,
-            Comment = dto.Comment,
-            Priority = dto.Priority,
-            ProjectId = dto.ProjectId
-        };
+        var objective = ObjectiveMapper.ToEntity(dto, (Guid)employeeId);
 
         await objectiveService.AddAsync(objective);
 
-        return CreatedAtAction(nameof(GetById), new { id = objective.Id }, MapToDto(objective));
+        return CreatedAtAction(nameof(GetById), new { id = objective.Id }, dto);
     }
 
     [Authorize(Policy = "RequireManagerOrAbove")]
@@ -138,7 +115,7 @@ public class ObjectivesController(
         if (employee == null)
             return NotFound("Employee not found");
 
-        var isInProject = await objectiveService.IsEmployeeInObjectiveProjectAsync(objectiveId, employeeId);
+        var isInProject = await objectiveService.IsEmployeeInObjectiveProjectAsync(objective, employeeId);
         if (!isInProject)
             return BadRequest("Employee is not assigned to the project");
 
@@ -207,7 +184,7 @@ public class ObjectivesController(
             return Forbid();
 
         var objectives = await objectiveService.GetObjectivesForManagerProjectsAsync(employeeId.Value);
-        return Ok(objectives.Select(MapToDto).ToList());
+        return Ok(objectives.Select(ObjectiveMapper.ToDto).ToList());
     }
 
     [Authorize(Policy = "RequireEmployeeOrAbove")]
@@ -223,6 +200,6 @@ public class ObjectivesController(
             return Forbid();
         
         var objectives = await objectiveService.GetEmployeeObjectivesAsync(employeeId.Value);
-        return Ok(objectives.Select(MapToDto).ToList());
+        return Ok(objectives.Select(ObjectiveMapper.ToDto).ToList());
     }
 }

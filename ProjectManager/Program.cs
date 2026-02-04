@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ProjectManager.Database;
+using ProjectManager.Models;
 using ProjectManager.Repositories;
 using ProjectManager.Repositories.Interfaces;
 using ProjectManager.Services;
@@ -24,10 +25,10 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options =>
     .AddEntityFrameworkStores<AppDbContext>();
 
 builder.Services.AddAuthorizationBuilder()
-    .AddPolicy("RequireManagerOrAbove", policy =>
-        policy.RequireRole("director", "project manager"))
-    .AddPolicy("RequireEmployeeOrAbove", policy =>
-        policy.RequireRole("director", "project manager", "employee"));
+    .AddPolicy(nameof(Policy.ManagerOrAbove), policy =>
+        policy.RequireRole(nameof(Role.Director), nameof(Role.ProjectManager)))
+    .AddPolicy(nameof(Policy.EmployeeOrAbove), policy =>
+        policy.RequireRole(nameof(Role.Director), nameof(Role.ProjectManager), nameof(Role.Employee)));
 
 builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();

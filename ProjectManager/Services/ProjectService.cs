@@ -1,4 +1,7 @@
-﻿using ProjectManager.Models;
+﻿using ProjectManager.Database;
+using ProjectManager.Dto;
+using ProjectManager.Mappers;
+using ProjectManager.Models;
 using ProjectManager.Repositories.Interfaces;
 using ProjectManager.Services.Interfaces;
 
@@ -30,8 +33,8 @@ public class ProjectService(IProjectRepository projectRepository) : IProjectServ
     public async Task<Project?> GetByIdAsync(Guid id)
         => await projectRepository.GetByIdAsync(id);
 
-    public async Task AddAsync(Project project)
-        => await projectRepository.AddAsync(project);
+    public async Task<Project> CreateProjectWithEmployeesAsync(ProjectCreateDto dto)
+        => await projectRepository.CreateWithEmployeesAsync(ProjectMapper.ToEntity(dto), dto.EmployeeIds);
 
     public async Task UpdateAsync(Project project)
         => await projectRepository.UpdateAsync(project);

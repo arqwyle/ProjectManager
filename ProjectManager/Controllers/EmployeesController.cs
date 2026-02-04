@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ProjectManager.Dto;
-using ProjectManager.Models;
+using ProjectManager.Mappers;
 using ProjectManager.Services.Interfaces;
 
 namespace ProjectManager.Controllers;
@@ -10,30 +10,12 @@ namespace ProjectManager.Controllers;
 [Route("api/[controller]")]
 public class EmployeesController(IEmployeeService service) : ControllerBase
 {
-    private static EmployeeDto MapToDto(Employee e)
-    {
-        var projectsIds = e.EmployeeProjects.Select(ep => ep.ProjectId).ToList();
-        var authoredObjectivesIds = e.AuthoredObjectives.Select(ep => ep.Id).ToList();
-        var assignedObjectivesIds = e.AssignedObjectives.Select(ep => ep.Id).ToList();
-        
-        return new EmployeeDto(
-            e.Id,
-            e.FirstName,
-            e.LastName,
-            e.Patronymic,
-            e.Mail,
-            projectsIds,
-            authoredObjectivesIds,
-            assignedObjectivesIds
-        );
-    }
-    
     [Authorize(Policy = "RequireManagerOrAbove")]
     [HttpGet]
     public async Task<ActionResult<List<EmployeeDto>>> GetAll()
     {
         var employees = await service.GetAllAsync();
-        return Ok(employees.Select(MapToDto).ToList());
+        return Ok(employees.Select(EmployeeMapper.ToDto).ToList());
     }
     
     [Authorize(Policy = "RequireManagerOrAbove")]
@@ -44,7 +26,7 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
         if (employee == null)
             return NotFound();
 
-        return Ok(MapToDto(employee));
+        return Ok(EmployeeMapper.ToDto(employee));
     }
     
     [Authorize(Roles = "director")]
@@ -54,18 +36,11 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var employee = new Employee
-        {
-            Id = Guid.NewGuid(),
-            FirstName = dto.FirstName,
-            LastName = dto.LastName,
-            Patronymic = dto.Patronymic,
-            Mail = dto.Mail
-        };
+        var employee = EmployeeMapper.ToEntity(dto);
 
         await service.AddAsync(employee);
 
-        return CreatedAtAction(nameof(GetById), new { id = employee.Id }, MapToDto(employee));
+        return CreatedAtAction(nameof(GetById), new { id = employee.Id }, dto);
     }
     
     [Authorize(Roles = "director")]

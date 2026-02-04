@@ -45,15 +45,8 @@ public class ObjectiveService(
     public async Task<List<Objective>> GetObjectivesForManagerProjectsAsync(Guid employeeId)
         => await objectiveRepository.GetObjectivesByDirectorIdAsync(employeeId);
 
-    public async Task<bool> IsEmployeeInObjectiveProjectAsync(Guid objectiveId, Guid employeeId)
-    {
-        var objective = await objectiveRepository.GetByIdAsync(objectiveId);
-        if (objective?.ProjectId == null) 
-            return false;
-
-        var employeeProjectIds = await projectRepository.GetProjectIdsByEmployeeIdAsync(employeeId);
-        return employeeProjectIds.Contains(objective.ProjectId.Value);
-    }
+    public async Task<bool> IsEmployeeInObjectiveProjectAsync(Objective objective, Guid employeeId)
+        => (await projectRepository.GetProjectIdsByEmployeeIdAsync(employeeId)).Contains(objective.ProjectId!.Value);
 
     public async Task<bool> UpdateObjectiveStatusAsync(Guid objectiveId, Status status, Guid employeeId, bool isDirector)
     {

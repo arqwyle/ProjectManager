@@ -163,34 +163,9 @@ public class ObjectiveServiceTests
         _mockObjectiveRepo.Setup(r => r.GetByIdAsync(objectiveId)).ReturnsAsync(objective);
         _mockProjectRepo.Setup(r => r.GetProjectIdsByEmployeeIdAsync(employeeId)).ReturnsAsync(projectIds);
 
-        var result = await _service.IsEmployeeInObjectiveProjectAsync(objectiveId, employeeId);
+        var result = await _service.IsEmployeeInObjectiveProjectAsync(objective, employeeId);
 
         Assert.True(result);
-    }
-
-    [Fact]
-    public async Task IsEmployeeInObjectiveProjectAsync_ShouldReturnFalse_WhenObjectiveNotFound()
-    {
-        var objectiveId = Guid.NewGuid();
-        var employeeId = Guid.NewGuid();
-        _mockObjectiveRepo.Setup(r => r.GetByIdAsync(objectiveId)).ReturnsAsync((Objective?)null);
-
-        var result = await _service.IsEmployeeInObjectiveProjectAsync(objectiveId, employeeId);
-
-        Assert.False(result);
-    }
-
-    [Fact]
-    public async Task IsEmployeeInObjectiveProjectAsync_ShouldReturnFalse_WhenObjectiveHasNoProject()
-    {
-        var objectiveId = Guid.NewGuid();
-        var employeeId = Guid.NewGuid();
-        var objective = new Objective { Id = objectiveId, Name = "Test", Priority = 1, Status = Status.ToDo, ProjectId = null};
-        _mockObjectiveRepo.Setup(r => r.GetByIdAsync(objectiveId)).ReturnsAsync(objective);
-
-        var result = await _service.IsEmployeeInObjectiveProjectAsync(objectiveId, employeeId);
-
-        Assert.False(result);
     }
 
     [Fact]
@@ -205,7 +180,7 @@ public class ObjectiveServiceTests
         _mockObjectiveRepo.Setup(r => r.GetByIdAsync(objectiveId)).ReturnsAsync(objective);
         _mockProjectRepo.Setup(r => r.GetProjectIdsByEmployeeIdAsync(employeeId)).ReturnsAsync(projectIds);
 
-        var result = await _service.IsEmployeeInObjectiveProjectAsync(objectiveId, employeeId);
+        var result = await _service.IsEmployeeInObjectiveProjectAsync(objective, employeeId);
 
         Assert.False(result);
     }

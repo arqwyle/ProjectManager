@@ -15,7 +15,7 @@ public interface IProjectRepository
         string? sortBy = null,
         bool isSortAscending = true);
     Task<Project?> GetByIdAsync(Guid id);
-    Task AddAsync(Project project);
+    Task<Project> CreateWithEmployeesAsync(Project project, List<Guid> employeeIds);
     Task UpdateAsync(Project project);
     Task DeleteAsync(Guid id);
     Task AddEmployeeToProjectAsync(Guid projectId, Guid employeeId);

@@ -117,9 +117,7 @@ public class EmployeeControllerTests
         Assert.NotNull(capturedEmployee);
         var createdAtResult = Assert.IsType<CreatedAtActionResult>(result.Result);
         Assert.Equal(nameof(_controller.GetById), createdAtResult.ActionName);
-
-        var returnedDto = Assert.IsType<EmployeeDto>(createdAtResult.Value);
-        Assert.Equal(capturedEmployee.Id, returnedDto.Id);
+        Assert.IsType<EmployeeCreateDto>(createdAtResult.Value);
     }
 
     [Fact]

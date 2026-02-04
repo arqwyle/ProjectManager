@@ -1,4 +1,5 @@
 ﻿using Moq;
+using ProjectManager.Dto;
 using ProjectManager.Models;
 using ProjectManager.Repositories.Interfaces;
 using ProjectManager.Services;
@@ -109,26 +110,6 @@ public class ProjectServiceTests
 
         Assert.Null(result);
         _mockRepository.Verify(r => r.GetByIdAsync(id), Times.Once);
-    }
-
-    [Fact]
-    public async Task AddAsync_ShouldCallRepositoryAddAsync()
-    {
-        var project = new Project
-        {
-            Id = Guid.NewGuid(), 
-            Name = "Test", 
-            CustomerName = "Test", 
-            ExecutorName = "Test", 
-            StartTime = DateTime.Now, 
-            EndTime = DateTime.Now.AddDays(1), 
-            Priority = 1, 
-            DirectorId = Guid.NewGuid()
-        };
-
-        await _service.AddAsync(project);
-
-        _mockRepository.Verify(r => r.AddAsync(project), Times.Once);
     }
 
     [Fact]

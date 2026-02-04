@@ -5,7 +5,7 @@ namespace ProjectManager.Dto;
 
 public record ObjectiveCreateDto(
     [Required] string Name,
-    [Required] Guid AuthorId,
+    Guid AuthorId,
     Guid? ExecutorId,
     Status Status,
     string? Comment,

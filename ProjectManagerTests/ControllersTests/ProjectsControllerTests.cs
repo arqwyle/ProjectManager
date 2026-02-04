@@ -133,22 +133,33 @@ public class ProjectControllerTests
     {
         var empId1 = Guid.NewGuid();
         var empId2 = Guid.NewGuid();
-        var dto = new ProjectCreateDto(
-            "Test", 
-            "Test", 
-            "Test", 
-            DateTime.Now, 
-            DateTime.Now.AddDays(1), 
-            1, 
-            Guid.NewGuid(), 
-            [empId1, empId2]);
-        Project? capturedProject = null;
+        var projectId = Guid.NewGuid();
 
-        _mockProjectService.Setup(s => s.AddAsync(It.IsAny<Project>()))
-            .Callback<Project>(p => capturedProject = p)
-            .Returns(Task.CompletedTask);
-        _mockProjectService.Setup(s => s.AddEmployeeToProjectAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
-            .Returns(Task.CompletedTask);
+        var dto = new ProjectCreateDto(
+            "Test",
+            "Test",
+            "Test",
+            DateTime.Now,
+            DateTime.Now.AddDays(1),
+            1,
+            Guid.NewGuid(),
+            [empId1, empId2]);
+
+        var createdProject = new Project
+        {
+            Id = projectId,
+            Name = "Test",
+            CustomerName = "Test",
+            ExecutorName = "Test",
+            StartTime = dto.StartTime,
+            EndTime = dto.EndTime,
+            Priority = 1,
+            DirectorId = dto.DirectorId
+        };
+
+        _mockProjectService
+            .Setup(s => s.CreateProjectWithEmployeesAsync(It.IsAny<ProjectCreateDto>()))
+            .ReturnsAsync(createdProject);
 
         _controller.ControllerContext = new ControllerContext
         {
@@ -157,13 +168,9 @@ public class ProjectControllerTests
 
         var result = await _controller.Create(dto);
 
-        Assert.NotNull(capturedProject);
-
         var createdAtResult = Assert.IsType<CreatedAtActionResult>(result.Result);
         Assert.Equal(nameof(_controller.GetById), createdAtResult.ActionName);
-
-        var returnedDto = Assert.IsType<ProjectDto>(createdAtResult.Value);
-        Assert.Equal(capturedProject.Id, returnedDto.Id);
+        Assert.IsType<ProjectCreateDto>(createdAtResult.Value);
     }
 
     [Fact]
@@ -188,7 +195,7 @@ public class ProjectControllerTests
         var result = await _controller.Create(dto);
 
         Assert.IsType<BadRequestObjectResult>(result.Result);
-        _mockProjectService.Verify(s => s.AddAsync(It.IsAny<Project>()), Times.Never);
+        _mockProjectService.Verify(s => s.CreateProjectWithEmployeesAsync(It.IsAny<ProjectCreateDto>()), Times.Never);
     }
 
     [Fact]

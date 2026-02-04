@@ -134,9 +134,7 @@ public class ObjectiveControllerTests
 
         var createdAtResult = Assert.IsType<CreatedAtActionResult>(result.Result);
         Assert.Equal(nameof(_controller.GetById), createdAtResult.ActionName);
-
-        var returnedDto = Assert.IsType<ObjectiveDto>(createdAtResult.Value);
-        Assert.Equal(capturedObjective.Id, returnedDto.Id);
+        Assert.IsType<ObjectiveCreateDto>(createdAtResult.Value);
     }
 
     [Fact]
@@ -287,7 +285,7 @@ public class ObjectiveControllerTests
 
         _mockObjectiveService.Setup(s => s.GetByIdAsync(objectiveId)).ReturnsAsync(objective);
         _mockEmployeeService.Setup(s => s.GetByIdAsync(employeeId)).ReturnsAsync(employee);
-        _mockObjectiveService.Setup(s => s.IsEmployeeInObjectiveProjectAsync(objectiveId, employeeId)).ReturnsAsync(true);
+        _mockObjectiveService.Setup(s => s.IsEmployeeInObjectiveProjectAsync(objective, employeeId)).ReturnsAsync(true);
         _mockObjectiveService.Setup(s => s.UpdateAsync(It.IsAny<Objective>())).Returns(Task.CompletedTask);
 
         _controller.ControllerContext = new ControllerContext
@@ -351,7 +349,7 @@ public class ObjectiveControllerTests
 
         _mockObjectiveService.Setup(s => s.GetByIdAsync(objectiveId)).ReturnsAsync(objective);
         _mockEmployeeService.Setup(s => s.GetByIdAsync(employeeId)).ReturnsAsync(employee);
-        _mockObjectiveService.Setup(s => s.IsEmployeeInObjectiveProjectAsync(objectiveId, employeeId)).ReturnsAsync(false);
+        _mockObjectiveService.Setup(s => s.IsEmployeeInObjectiveProjectAsync(objective, employeeId)).ReturnsAsync(false);
 
         _controller.ControllerContext = new ControllerContext
         {

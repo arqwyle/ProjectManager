@@ -99,31 +99,6 @@ public class ProjectRepositoryTests
     }
 
     [Fact]
-    public async Task AddAsync_ShouldAddProjectToDatabase()
-    {
-        await using var context = new AppDbContext(_options);
-        var repository = new ProjectRepository(context);
-        var newId = Guid.NewGuid();
-        var newProject = new Project
-        {
-            Id = newId,
-            Name = "Test",
-            CustomerName = "Test",
-            ExecutorName = "Test",
-            StartTime = DateTime.Now,
-            EndTime = DateTime.Now.AddDays(1),
-            Priority = 1,
-            DirectorId = Guid.NewGuid()
-        };
-
-        await repository.AddAsync(newProject);
-        var saved = await context.Projects.FindAsync(newId);
-
-        Assert.NotNull(saved);
-        Assert.Equal(newId, saved.Id);
-    }
-
-    [Fact]
     public async Task UpdateAsync_ShouldUpdateProjectInDatabase()
     {
         await using var context = new AppDbContext(_options);
